@@ -22,38 +22,16 @@
  * THE SOFTWARE.
  */
 
-/*
- * Proxy provides the proxying services for the portal proxy service. Accepts 
- * with Monitor to know where to direct clients, listens for direction to 
- * change from Monitor and passes traffic back and forth from clients to services.
- */
-
 #ifndef HOOKY_H
 #define HOOKY_H
 
-#include <stdio.h>
-#include <assert.h>
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
-#include <stdbool.h>
-#include <unistd.h>	
-
-#include <sys/socket.h>
-#include <netinet/in.h>
-
-#include <event2/bufferevent_ssl.h>
-#include <event2/bufferevent.h>
-#include <event2/buffer.h>
-#include <event2/listener.h>
-#include <event2/util.h>
-
-#include <signal.h>
-#include <ctype.h>
-
 // functions
 
-bool verfy_args(int num_args, char **argv);
-void init_accept_clients(client_list *clients);
+void usage();
+bool verify_args(int num_args, char **argv);
+bool parse_address(char *address_to_parse, char *ip_address, char* port_number);
+char* parse_config(char argv[], char *addr);
+void init_accept_clients(struct event_base *event_loop, struct evconnlistener *client_listener, client_list *clients, char address[]);
+void init_signals(struct event_base *event_loop);
 
 #endif

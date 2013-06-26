@@ -1,4 +1,4 @@
-/*
+/*struct bufferevent *buffer_event, void *svc_package
  * The MIT License (MIT)
  * 
  * Copyright (c) 2013 <hal at pagodabox dot com>
@@ -22,19 +22,18 @@
  * THE SOFTWARE.
  */
 
-/*
- * Proxy provides the proxying services for the portal proxy service. Accepts 
- * with Monitor to know where to direct clients, listens for direction to 
- * change from Monitor and passes traffic back and forth from clients to services.
- */
-
 #ifndef CALLBACK_H
 #define CALLBACK_H
 
  // functions 
 
-on_client_connect
-on_read
+void on_client_connect(struct evconnlistener *listener, evutil_socket_t fd, struct sockaddr *address, int socklen, void *c_list);
+void process_data_from_client(client *current_client, char *data_recived);
+int execute_request(client *current_client);
+int package_reply(int request_exit_code, char *reply, client *current_client);
+void reset_client(client *current_client);
+void on_read(struct bufferevent *buffer_event, void *c_list);
+void signal_cb (evutil_socket_t sig, short events, void *user_data);
 bool file_exist(char *file_path);
 
 #endif 

@@ -22,22 +22,45 @@
  * THE SOFTWARE.
  */
 
-/*
- * Proxy provides the proxying services for the portal proxy service. Accepts 
- * with Monitor to know where to direct clients, listens for direction to 
- * change from Monitor and passes traffic back and forth from clients to services.
- */
-
 #ifndef CLIENT_H
 #define CLIENT_H
+
+#include <stdio.h>
+#include <assert.h>
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+#include <stdbool.h>
+#include <unistd.h>	
+
+#include <sys/socket.h>
+#include <netinet/in.h>
+
+#include <event2/bufferevent_ssl.h>
+#include <event2/bufferevent.h>
+#include <event2/buffer.h>
+#include <event2/listener.h>
+#include <event2/util.h>
+
+#include <signal.h>
+#include <ctype.h>
+
+// constants defined 
+
+#define complete_address_len    23      // length of char arrays holding address a.d.c.e:portnum
+#define file_name_len           100     // length of file names
+#define ip_len                  16      // length of ip portion of address
+#define port_len                6       // length of port number portion of address
+#define listen_address			"127.0.0.1:4000" // default address to listen on for clients 
 
  // structures 
 
  typedef struct client{
- 	struct bufferevernt 	*client_bufferevent;
+ 	struct bufferevent 		*client_bufferevent;
  	char 					channel;
  	unsigned int 			data_length;
- 	char 					*data
+ 	char 					*data;
+ 	int 					data_position;
  } client;
 
  typedef struct client_node{
@@ -57,8 +80,11 @@ client_list* new_client_list(client_node *input_node);
 client_list* new_null_client_list();
 client_node* new_client_node(client *input_client, client_node *input_node);
 client_node* new_null_client_node();
-void free_client(client *old_client);
-void free_client_list(client_list *old_list);
-void free_client_node(client_node *old_node);
+client* free_client(client *old_client);
+client_list* free_client_list(client_list *old_list);
+client_node* free_client_node(client_node *old_node);
+void print_client(client *client_to_print);
+void print_client_node(client_node *node_to_print);
+void print_client_list(client_list *list_to_print);
 
 #endif 
