@@ -46,11 +46,34 @@ void on_client_connect(struct evconnlistener *listener, evutil_socket_t fd, stru
  * determines if new or continuing client request, parses data, updates client
  */
 void 
-process_data_from_client(client *current_client, char *data_recived)  //  STUB
+process_data_from_client(client *current_client, char *data_recived, int len)
 {
-	// determine if new client request or not.
-	// parse data
-	// update client
+	bool 		new_request;
+	int 		i = 0, j = 0, size = 0;
+	char 		str_size[4];
+
+	if (current_client->data_length == 0)
+		new_request = true;
+	else 
+		new_request = false;
+
+	if (new_request){
+		for (i = 0; i < 4; i++)
+			str_size[i] = data_recived[i];
+		for (i = 0; i < 4; i++)
+			size = size * 256 + (int) str_size[i];
+
+		current_client->data_length = size;
+		current_client->data = (char *) malloc(size);
+	}
+
+	size = current_client->data_length;
+	j = current_client->data_position;
+
+	for ( ; j < size && j < len; )
+		current_client->data[j++] = data_recived[i++];
+
+	current_client->data_position = j;
 	free(data_recived);
 }
 
@@ -82,7 +105,7 @@ package_reply(int request_exit_code, char *reply, client *current_client)  //  S
 void 
 reset_client(client *current_client)
 {
-	current_client->channel = 0;
+	//current_client->channel = 0;
 	current_client->data_length = 0;
 	current_client->data_position = 0;
 	free(current_client->data);
@@ -122,7 +145,7 @@ on_read(struct bufferevent *buffer_event, void *c_list)
     bzero(data_recived, len); 
     evbuffer_remove(input, data_recived, len); 
 
-    process_data_from_client(current_client, data_recived);
+    process_data_from_client(current_client, data_recived, len);
     data_recived = NULL;
 
     if(current_client->data_length == current_client->data_position){

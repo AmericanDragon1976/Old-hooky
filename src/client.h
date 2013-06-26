@@ -57,7 +57,7 @@
 
  typedef struct client{
  	struct bufferevent 		*client_bufferevent;
- 	char 					channel;
+ 	//char 					channel;
  	unsigned int 			data_length;
  	char 					*data;
  	int 					data_position;

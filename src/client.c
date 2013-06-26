@@ -35,7 +35,7 @@ new_client(struct bufferevent *input_bev, char *input_data)
     client          *new_client = (client *) malloc(sizeof(client));
 
     new_client->client_bufferevent = input_bev;
-    new_client->channel = 0;
+    //new_client->channel = 0;
     new_client->data_length = 0;
     new_client->data = input_data;
     new_client->data_position = 0;
@@ -163,7 +163,7 @@ print_client(client *client_to_print)
     else {
         printf("Client \n");
         printf("client_bev: %p\n",client_to_print->client_bufferevent);
-        printf("channel: %d\n", client_to_print->channel);
+        //printf("channel: %d\n", client_to_print->channel);
         printf("data_len: %d\n", client_to_print->data_length);
         printf("data: ");
         int i;

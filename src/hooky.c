@@ -87,7 +87,7 @@ parse_address(char *address_to_parse, char *ip_address, char* port_number)
  * 
  */
 char*
-parse_config(char argv[], char *addr)
+parse_config(char argv[], char *addr)           // STUB
 {
     char    *path = NULL;
 
@@ -154,5 +154,6 @@ main(int argc, char **argv)
 
     init_signals(event_loop);
     event_base_dispatch(event_loop);
+    print_client_list(clients);
     event_base_free(event_loop);
 }

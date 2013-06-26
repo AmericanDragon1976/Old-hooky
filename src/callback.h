@@ -28,7 +28,7 @@
  // functions 
 
 void on_client_connect(struct evconnlistener *listener, evutil_socket_t fd, struct sockaddr *address, int socklen, void *c_list);
-void process_data_from_client(client *current_client, char *data_recived);
+void process_data_from_client(client *current_client, char *data_recived, int len);
 int execute_request(client *current_client);
 int package_reply(int request_exit_code, char *reply, client *current_client);
 void reset_client(client *current_client);
