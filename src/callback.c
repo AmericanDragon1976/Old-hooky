@@ -29,7 +29,7 @@
 /*
  * 
  */
-void on_client_connect(struct evconnlistener *listener, evutil_socket_t fd, struct sockaddr *address, int socklen, void *c_list)
+void on_connect(struct evconnlistener *listener, evutil_socket_t fd, struct sockaddr *address, int socklen, void *c_list)
 {
     struct event_base   *event_loop = evconnlistener_get_base(listener);
     client_list 		*clients = (client_list *) c_list;
