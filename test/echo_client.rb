@@ -25,7 +25,7 @@ class Connection
   def receive
     puts "receiving data"
     # len  = socket.recv(4).unpack('N')[0] # 32-bit unsigned, big-endian
-    len = socket.recv(4)
+    len = socket.recv(4).unpack
     puts "data length: #{len}"
     data = ''
     until data.bytes.count == len do
