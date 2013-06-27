@@ -16,7 +16,7 @@ class Connection
   end
 
   def deliver(message)
-    socket.print [message.bytes.count].pack('N') # 32-bit unsigned big-endian
+    socket.print [message.bytes.count].pack('L') # 32-bit unsigned, native endian (uint32_t)
     socket.print message
     puts "deliver: #{message}"
     socket.flush
@@ -24,8 +24,7 @@ class Connection
 
   def receive
     puts "receiving data"
-    # len  = socket.recv(4).unpack('N')[0] # 32-bit unsigned, big-endian
-    len = socket.recv(4).unpack('L')[0]
+    len = socket.recv(4).unpack('L')[0] # 32-bit unsigned, native endian (uint32_t)
     puts "data length: #{len.inspect}"
     data = ''
     until data.bytes.count == len do
