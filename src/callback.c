@@ -60,11 +60,12 @@ process_data_from_client(client *current_client, char *data_recived, int len)
 	if (new_request){
 		for (i = 0; i < 4; i++)
 			str_size[i] = data_recived[i];
-		for (i = 0; i < 4; i++)
+		for (i = 3; i >= 0; i--)
 			size = size * 256 + (int) str_size[i];
 
-		current_client->data_length = size;
+		current_client->data_length = size; 
 		current_client->data = (char *) malloc(size);
+		len -= 4;
 	}
 
 	size = current_client->data_length;
@@ -74,7 +75,7 @@ process_data_from_client(client *current_client, char *data_recived, int len)
 		current_client->data[j++] = data_recived[i++];
 
 	current_client->data_position = j;
-	free(data_recived);
+	free(data_recived); 
 }
 
 /*
@@ -140,20 +141,20 @@ on_read(struct bufferevent *buffer_event, void *c_list)
 		}
 	}
 
-    len = evbuffer_get_length(input);
+    len = evbuffer_get_length(input); 
     data_recived = (char *) malloc(len);
     bzero(data_recived, len); 
     evbuffer_remove(input, data_recived, len); 
 
     process_data_from_client(current_client, data_recived, len);
-    data_recived = NULL;
+    data_recived = NULL; 
 
     if(current_client->data_length == current_client->data_position && current_client->data_length != 0){
-    	//request_exit_code = execute_request(current_client);
     	//reply_size = package_reply(request_exit_code, reply, current_client);
 		//bufferevent_write(current_client->client_bufferevent, reply, reply_size);
-		bufferevent_write(current_client->client_bufferevent, &current_client->data_length, sizeof(int));
+		bufferevent_write(current_client->client_bufferevent, &current_client->data_length, sizeof(unsigned int));
 		bufferevent_write(current_client->client_bufferevent, current_client->data, current_client->data_length);
+		bufferevent_flush(current_client->client_bufferevent, EV_WRITE, BEV_NORMAL);
     	reset_client(current_client);
     }
 }
@@ -174,8 +175,9 @@ signal_cb (evutil_socket_t sig, short events, void *user_data)
     event_base_loopexit(base, &delay);
 }
 
+void 
 client_dc(struct bufferevent *buffer_event, void *ctx)
-{
+{ printf("client dc\n");
 
 	if (ctx == NULL){
 		fprintf(stderr,"Fatal error: Null list passed to client_dc()");
