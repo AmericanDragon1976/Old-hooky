@@ -56,6 +56,7 @@ current_iteration = 0
 1000.times do
 
   current_iteration += 1
+  puts current_iteration
 
   message = messages[rand(4)]
   connection.deliver message
