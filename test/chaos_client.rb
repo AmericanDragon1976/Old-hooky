@@ -22,10 +22,13 @@ class Connection
   end
 
   def receive
+    puts "receive"
     len = socket.recv(4).unpack('L')[0] # 32-bit unsigned, native endian (uint32_t)
+    puts "length: #{len}"
     data = ''
     until data.bytes.count == len do
       data += socket.recv (len - data.bytes.count)
+      puts data
     end
     data
   end
@@ -53,7 +56,7 @@ messages = []
 end
 
 current_iteration = 0
-1000.times do
+1.times do
 
   current_iteration += 1
   puts current_iteration
