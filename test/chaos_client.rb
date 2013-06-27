@@ -52,14 +52,19 @@ messages = []
   messages << File.read(File.expand_path("../ipsum/#{number}.txt", __FILE__))
 end
 
+current_iteration = 0
 1000.times do
+
+  current_iteration += 1
 
   message = messages[rand(4)]
   connection.deliver message
   result = connection.receive
 
   if not result == message
-    puts "whoa! mismatch..."
+    puts "whoa! iteration #{current_iteration} mismatch..."
+    puts "original length: #{message.length}"
+    puts "received length: #{result.length}"
     exit
   end
 
