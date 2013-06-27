@@ -110,7 +110,7 @@ init_accept_clients(struct event_base *event_loop, struct evconnlistener *client
         svc_address.sin_family = AF_INET;
         svc_address.sin_addr.s_addr = (*ip_bytes).s_addr; 
         svc_address.sin_port = htons(atoi(port_number));
-        client_listener = evconnlistener_new_bind(event_loop, on_client_connect, clients, LEV_OPT_CLOSE_ON_FREE|LEV_OPT_REUSEABLE, -1, (struct sockaddr *) &svc_address, sizeof(svc_address));
+        client_listener = evconnlistener_new_bind(event_loop, on_connect, clients, LEV_OPT_CLOSE_ON_FREE|LEV_OPT_REUSEABLE, -1, (struct sockaddr *) &svc_address, sizeof(svc_address));
         if (!client_listener)
             printf("Couldn't create Listener\n");
     } 
