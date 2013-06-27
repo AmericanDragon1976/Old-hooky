@@ -18,7 +18,7 @@ class Connection
   def deliver(message)
     socket.print [message.bytes.count].pack('N') # 32-bit unsigned big-endian
     socket.print message
-    # puts "deliver: #{message}"
+    puts "deliver: #{message}"
     socket.flush
   end
 
@@ -28,7 +28,7 @@ class Connection
     until data.bytes.count == len do
       data += socket.recv (len - data.bytes.count)
     end
-      # puts "receive: #{data}"
+      puts "receive: #{data}"
     data
   end
 
