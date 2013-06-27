@@ -31,7 +31,7 @@
 #include <string.h>
 #include <errno.h>
 #include <stdbool.h>
-#include <unistd.h>	
+#include <unistd.h> 
 
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -51,25 +51,24 @@
 #define file_name_len           100     // length of file names
 #define ip_len                  16      // length of ip portion of address
 #define port_len                6       // length of port number portion of address
-#define listen_address			"127.0.0.1:4000" // default address to listen on for clients 
+#define listen_address          "127.0.0.1:4000" // default address to listen on for clients 
 
  // structures 
 
  typedef struct client{
- 	struct bufferevent 		*client_bufferevent;
- 	//char 					channel;
- 	unsigned int 			data_length;
- 	char 					*data;
- 	int 					data_position;
+    struct bufferevent      *client_bufferevent;
+    unsigned int            data_length;
+    char                    *data;
+    int                     data_position;
  } client;
 
  typedef struct client_node{
- 	client 				*client_data;
- 	struct client_node 	*next;
+    client              *client_data;
+    struct client_node  *next;
  } client_node;
 
  typedef struct client_list{
- 	client_node		*head;
+    client_node     *head;
  } client_list;
 
 // functions

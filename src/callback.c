@@ -32,8 +32,8 @@
 void on_client_connect(struct evconnlistener *listener, evutil_socket_t fd, struct sockaddr *address, int socklen, void *c_list)
 {
     struct event_base   *event_loop = evconnlistener_get_base(listener);
-    client_list 		*clients = (client_list *) c_list;
-    client 				*connecting_client = new_null_client();
+    client_list         *clients = (client_list *) c_list;
+    client              *connecting_client = new_null_client();
 
     connecting_client->client_bufferevent = bufferevent_socket_new(event_loop, fd, BEV_OPT_CLOSE_ON_FREE|EV_PERSIST);
     bufferevent_setcb(connecting_client->client_bufferevent, on_read, NULL, event_cb, clients);
@@ -48,34 +48,34 @@ void on_client_connect(struct evconnlistener *listener, evutil_socket_t fd, stru
 void 
 process_data_from_client(client *current_client, char *data_recived, int len)
 {
-	bool 		new_request;
-	int 		i = 0, j = 0, size = 0;
-	char 		str_size[4];
+    bool        new_request;
+    int         i = 0, j = 0, size = 0;
+    char        str_size[4];
 
-	if (current_client->data_length == 0)
-		new_request = true;
-	else 
-		new_request = false;
+    if (current_client->data_length == 0)
+        new_request = true;
+    else 
+        new_request = false;
 
-	if (new_request){
-		for (i = 0; i < 4; i++)
-			str_size[i] = data_recived[i];
-		for (i = 3; i >= 0; i--)
-			size = size * 256 + (int) str_size[i];
+    if (new_request){
+        for (i = 0; i < 4; i++)
+            str_size[i] = data_recived[i];
+        for (i = 3; i >= 0; i--)
+            size = size * 256 + (int) str_size[i];
 
-		current_client->data_length = size; 
-		current_client->data = (char *) malloc(size);
-		len -= 4;
-	}
+        current_client->data_length = size; 
+        current_client->data = (char *) malloc(size);
+        len -= 4;
+    }
 
-	size = current_client->data_length;
-	j = current_client->data_position;
+    size = current_client->data_length;
+    j = current_client->data_position;
 
-	for ( ; j < size && j < len; )
-		current_client->data[j++] = data_recived[i++];
+    for ( ; j < size && j < len; )
+        current_client->data[j++] = data_recived[i++];
 
-	current_client->data_position = j;
-	free(data_recived); 
+    current_client->data_position = j;
+    free(data_recived); 
 }
 
 /*
@@ -84,9 +84,9 @@ process_data_from_client(client *current_client, char *data_recived, int len)
 int 
 execute_request(client *current_client)  //  STUB
 {
-	int 		exit_code;
+    int         exit_code;
 
-	return(exit_code);
+    return(exit_code);
 }
 
 /*
@@ -95,9 +95,9 @@ execute_request(client *current_client)  //  STUB
 int 
 package_reply(int request_exit_code, char *reply, client *current_client)  //  STUB
 {
-	int 		package_size;
+    int         package_size;
 
-	return(package_size);
+    return(package_size);
 }
 
 /*
@@ -106,11 +106,11 @@ package_reply(int request_exit_code, char *reply, client *current_client)  //  S
 void 
 reset_client(client *current_client)
 {
-	//current_client->channel = 0;
-	current_client->data_length = 0;
-	current_client->data_position = 0;
-	free(current_client->data);
-	current_client->data = NULL;
+    //current_client->channel = 0;
+    current_client->data_length = 0;
+    current_client->data_position = 0;
+    free(current_client->data);
+    current_client->data = NULL;
 }
 
 /*
@@ -119,27 +119,27 @@ reset_client(client *current_client)
 void 
 on_read(struct bufferevent *buffer_event, void *c_list)
 {
-	client_list		*clients = (client_list *) c_list;
-	client_node 	*current_node = clients->head;
-	client 			*current_client = NULL;
+    client_list     *clients = (client_list *) c_list;
+    client_node     *current_node = clients->head;
+    client          *current_client = NULL;
     struct evbuffer *input = bufferevent_get_input(buffer_event);
-    int 			len, request_exit_code, reply_size;
-    char 			*data_recived = NULL;
-    char 			*reply = NULL;
+    int             len, request_exit_code, reply_size;
+    char            *data_recived = NULL;
+    char            *reply = NULL;
 
-	while (current_node != NULL){
-		if (current_node->client_data != NULL){
-			current_client = current_node->client_data;
+    while (current_node != NULL){
+        if (current_node->client_data != NULL){
+            current_client = current_node->client_data;
 
-			if (current_client == NULL || current_client->client_bufferevent != buffer_event){
-				current_node = current_node->next;
-			}
-			else {
-				///break;
-				current_node = NULL;
-			}
-		}
-	}
+            if (current_client == NULL || current_client->client_bufferevent != buffer_event){
+                current_node = current_node->next;
+            }
+            else {
+                ///break;
+                current_node = NULL;
+            }
+        }
+    }
 
     len = evbuffer_get_length(input); 
     data_recived = (char *) malloc(len);
@@ -150,12 +150,12 @@ on_read(struct bufferevent *buffer_event, void *c_list)
     data_recived = NULL; 
 
     if(current_client->data_length == current_client->data_position && current_client->data_length != 0){
-    	//reply_size = package_reply(request_exit_code, reply, current_client);
-		//bufferevent_write(current_client->client_bufferevent, reply, reply_size);
-		bufferevent_write(current_client->client_bufferevent, &current_client->data_length, sizeof(unsigned int));
-		bufferevent_write(current_client->client_bufferevent, current_client->data, current_client->data_length);
-		bufferevent_flush(current_client->client_bufferevent, EV_WRITE, BEV_NORMAL);
-    	reset_client(current_client);
+        //reply_size = package_reply(request_exit_code, reply, current_client);
+        //bufferevent_write(current_client->client_bufferevent, reply, reply_size);
+        bufferevent_write(current_client->client_bufferevent, &current_client->data_length, sizeof(unsigned int));
+        bufferevent_write(current_client->client_bufferevent, current_client->data, current_client->data_length);
+        bufferevent_flush(current_client->client_bufferevent, EV_WRITE, BEV_NORMAL);
+        reset_client(current_client);
     }
 }
 
@@ -177,39 +177,38 @@ signal_cb (evutil_socket_t sig, short events, void *user_data)
 
 void 
 client_dc(struct bufferevent *buffer_event, void *ctx)
-{ printf("client dc\n");
+{ 
+    if (ctx == NULL){
+        fprintf(stderr,"Fatal error: Null list passed to client_dc()");
+        exit(0);
+    }
 
-	if (ctx == NULL){
-		fprintf(stderr,"Fatal error: Null list passed to client_dc()");
-		exit(0);
-	}
+    client          *temp_client;
+    client_list     *list = (client_list *) ctx;
 
-	client 			*temp_client;
-	client_list 	*list = (client_list *) ctx;
+    if (list->head == NULL){
+        fprintf(stderr,"Fatal error: Empty list passed to client_dc()");
+        exit(0);
+    }
 
-	if (list->head == NULL){
-		fprintf(stderr,"Fatal error: Empty list passed to client_dc()");
-		exit(0);
-	}
+    client_node     *current_node = list->head, *temp_node = list->head->next;
 
-	client_node 	*current_node = list->head, *temp_node = list->head->next;
-
-	if (current_node->client_data->client_bufferevent == buffer_event){
-		list->head = current_node->next;
-		free_client_node(current_node);
-	}
-	else {
-		while (temp_node != NULL){
-			if (temp_node->client_data->client_bufferevent == buffer_event){
-				current_node->next = temp_node->next;
-				free_client_node(temp_node);
-			}
-			else {
-				current_node = temp_node;
-				temp_node = temp_node->next;
-			}
-		}
-	}
+    if (current_node->client_data->client_bufferevent == buffer_event){
+        list->head = current_node->next;
+        free_client_node(current_node);
+    }
+    else {
+        while (temp_node != NULL){
+            if (temp_node->client_data->client_bufferevent == buffer_event){
+                current_node->next = temp_node->next;
+                free_client_node(temp_node);
+            }
+            else {
+                current_node = temp_node;
+                temp_node = temp_node->next;
+            }
+        }
+    }
 }
 
 /* 
@@ -252,8 +251,8 @@ event_cb(struct bufferevent *buffer_event, short what, void *ctx)
 bool 
 file_exist(char file_path[])
 {
-	if (access(file_path, F_OK) != -1)
-		return(true);
-	else
-		return(false);
+    if (access(file_path, F_OK) != -1)
+        return(true);
+    else
+        return(false);
 }
