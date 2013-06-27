@@ -154,6 +154,5 @@ main(int argc, char **argv)
 
     init_signals(event_loop);
     event_base_dispatch(event_loop);
-print_client_list(clients);
     event_base_free(event_loop);
 }

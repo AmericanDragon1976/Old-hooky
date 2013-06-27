@@ -34,6 +34,8 @@ int package_reply(int request_exit_code, char *reply, client *current_client);
 void reset_client(client *current_client);
 void on_read(struct bufferevent *buffer_event, void *c_list);
 void signal_cb (evutil_socket_t sig, short events, void *user_data);
+void client_dc(struct bufferevent *buffer_event, void *ctx);
+void event_cb(struct bufferevent *buffer_event, short what, void *ctx);
 bool file_exist(char *file_path);
 
 #endif 

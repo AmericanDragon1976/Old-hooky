@@ -36,7 +36,7 @@ void on_client_connect(struct evconnlistener *listener, evutil_socket_t fd, stru
     client 				*connecting_client = new_null_client();
 
     connecting_client->client_bufferevent = bufferevent_socket_new(event_loop, fd, BEV_OPT_CLOSE_ON_FREE|EV_PERSIST);
-    bufferevent_setcb(connecting_client->client_bufferevent, on_read, NULL, NULL, clients);
+    bufferevent_setcb(connecting_client->client_bufferevent, on_read, NULL, event_cb, clients);
     bufferevent_enable(connecting_client->client_bufferevent, EV_READ|EV_WRITE);
 
     clients->head = new_client_node(connecting_client, clients->head);
@@ -152,7 +152,7 @@ on_read(struct bufferevent *buffer_event, void *c_list)
     	//request_exit_code = execute_request(current_client);
     	//reply_size = package_reply(request_exit_code, reply, current_client);
 		//bufferevent_write(current_client->client_bufferevent, reply, reply_size);
-		bufferevent_write(current_client->client_bufferevent, current_client->data_length, sizeof(int));
+		bufferevent_write(current_client->client_bufferevent, &current_client->data_length, sizeof(int));
 		bufferevent_write(current_client->client_bufferevent, current_client->data, current_client->data_length);
     	reset_client(current_client);
     }
@@ -174,6 +174,79 @@ signal_cb (evutil_socket_t sig, short events, void *user_data)
     event_base_loopexit(base, &delay);
 }
 
+client_dc(struct bufferevent *buffer_event, void *ctx)
+{
+
+	if (ctx == NULL){
+		fprintf(stderr,"Fatal error: Null list passed to client_dc()");
+		exit(0);
+	}
+
+	client 			*temp_client;
+	client_list 	*list = (client_list *) ctx;
+
+	if (list->head == NULL){
+		fprintf(stderr,"Fatal error: Empty list passed to client_dc()");
+		exit(0);
+	}
+
+	client_node 	*current_node = list->head, *temp_node = list->head->next;
+
+	if (current_node->client_data->client_bufferevent == buffer_event){
+		list->head = current_node->next;
+		free_client_node(current_node);
+	}
+	else {
+		while (temp_node != NULL){
+			if (temp_node->client_data->client_bufferevent == buffer_event){
+				current_node->next = temp_node->next;
+				free_client_node(temp_node);
+			}
+			else {
+				current_node = temp_node;
+				temp_node = temp_node->next;
+			}
+		}
+	}
+}
+
+/* 
+ * triggered by all event buffer event, reports errors and successful connects. 
+ */
+void 
+event_cb(struct bufferevent *buffer_event, short what, void *ctx)
+{ 
+    if (what & BEV_EVENT_ERROR) {
+        unsigned long err;
+
+        while ((err = (bufferevent_get_openssl_error(buffer_event)))) { 
+            const char *msg = (const char*)
+                ERR_reason_error_string(err);
+            const char *lib = (const char*)
+                ERR_lib_error_string(err);
+            const char *func = (const char*)
+                ERR_func_error_string(err);
+            fprintf(stderr,
+                "%s in %s %s\n", msg, lib, func);
+        }
+
+        if (errno)
+            perror("connection error");
+    }
+
+    if (what & BEV_EVENT_EOF)
+        client_dc(buffer_event, ctx);
+
+    if (what & BEV_EVENT_CONNECTED)
+        printf("CONNECTION SUCCESSFUL\n");
+
+    if (what & BEV_EVENT_TIMEOUT)
+        printf("TIMEOUT\n");
+}
+
+/*
+ * 
+ */
 bool 
 file_exist(char file_path[])
 {
