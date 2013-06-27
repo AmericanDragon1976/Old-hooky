@@ -18,20 +18,15 @@ class Connection
   def deliver(message)
     socket.print [message.bytes.count].pack('L') # 32-bit unsigned, native endian (uint32_t)
     socket.print message
-    puts "deliver: #{message}"
     socket.flush
   end
 
   def receive
-    puts "receiving data"
     len = socket.recv(4).unpack('L')[0] # 32-bit unsigned, native endian (uint32_t)
-    puts "data length: #{len.inspect}"
     data = ''
     until data.bytes.count == len do
       data += socket.recv (len - data.bytes.count)
-      puts "data: #{data}"
     end
-      puts "receive: #{data}"
     data
   end
 
@@ -51,6 +46,7 @@ port = '4000'
 
 connection = Connection.new host, port
 
-connection.deliver "hello world!"
+print "type message> "
+connection.deliver gets.chomp
 
 puts connection.receive
