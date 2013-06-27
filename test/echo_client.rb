@@ -44,7 +44,7 @@ class Connection
 end
 
 host = '127.0.0.1'
-port = '10000'
+port = '4000'
 
 connection = Connection.new host, port
 
