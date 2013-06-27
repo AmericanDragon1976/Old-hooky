@@ -29,6 +29,7 @@ class Connection
     data = ''
     until data.bytes.count == len do
       data += socket.recv (len - data.bytes.count)
+      puts "data: #{data}"
     end
       puts "receive: #{data}"
     data
