@@ -148,10 +148,12 @@ on_read(struct bufferevent *buffer_event, void *c_list)
     process_data_from_client(current_client, data_recived, len);
     data_recived = NULL;
 
-    if(current_client->data_length == current_client->data_position){
-    	request_exit_code = execute_request(current_client);
-    	reply_size = package_reply(request_exit_code, reply, current_client);
-		bufferevent_write(current_client->client_bufferevent, reply, reply_size);
+    if(current_client->data_length == current_client->data_position && current_client->data_length != 0){
+    	//request_exit_code = execute_request(current_client);
+    	//reply_size = package_reply(request_exit_code, reply, current_client);
+		//bufferevent_write(current_client->client_bufferevent, reply, reply_size);
+		bufferevent_write(current_client->client_bufferevent, current_client->data_length, sizeof(int));
+		bufferevent_write(current_client->client_bufferevent, current_client->data, current_client->data_length);
     	reset_client(current_client);
     }
 }
