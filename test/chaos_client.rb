@@ -55,10 +55,11 @@ messages = []
 end
 
 current_iteration = 0
+
 1000000.times do
 
   current_iteration += 1
-  puts current_iteration
+  puts current_iteration if current_iteration % 10000 == 0
 
   message = messages[rand(4)]
   connection.deliver message
