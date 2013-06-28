@@ -1,4 +1,3 @@
-
 #!/usr/bin/env ruby
 
 require 'socket'
@@ -29,7 +28,6 @@ class Connection
     data = ''
     until data.bytes.count == len do
       data += socket.recv (len - data.bytes.count)
-      puts data
     end
     data
   end
@@ -57,7 +55,7 @@ messages = []
 end
 
 current_iteration = 0
-1000.times do
+1000000.times do
 
   current_iteration += 1
   puts current_iteration
