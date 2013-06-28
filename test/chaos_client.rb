@@ -1,3 +1,4 @@
+
 #!/usr/bin/env ruby
 
 require 'socket'
@@ -56,7 +57,7 @@ messages = []
 end
 
 current_iteration = 0
-1.times do
+1000.times do
 
   current_iteration += 1
   puts current_iteration
