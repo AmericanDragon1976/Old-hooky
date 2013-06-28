@@ -59,7 +59,7 @@
     struct bufferevent      *client_bufferevent;
     unsigned int            data_length;
     char                    *data;
-    int                     data_position;
+    unsigned int            data_position;
  } client;
 
  typedef struct client_node{

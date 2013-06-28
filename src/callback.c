@@ -39,7 +39,7 @@ void on_connect(struct evconnlistener *listener, evutil_socket_t fd, struct sock
     bufferevent_setcb(connecting_client->client_bufferevent, on_read, NULL, event_cb, clients);
     bufferevent_enable(connecting_client->client_bufferevent, EV_READ|EV_WRITE);
 
-    clients->head = new_client_node(connecting_client, clients->head);
+    clients->head = new_client_node(connecting_client, clients->head); 
 }
 
 /*
@@ -48,30 +48,44 @@ void on_connect(struct evconnlistener *listener, evutil_socket_t fd, struct sock
 void 
 process_data_from_client(client *current_client, char *data_recived, int len)
 {
-    bool        new_request;
-    int         i = 0, j = 0, size = 0;
-    char        str_size[4];
+    bool            new_request;
+    int             i = 0, j = 0, size = 0;
+    int             *int_ptr;
+    char            str_size[4], temp_char_num[4];
+
+    int_ptr = (int *) &temp_char_num;
+    *int_ptr = 0;
 
     if (current_client->data_length == 0)
         new_request = true;
     else 
         new_request = false;
 
-    if (new_request){
-        for (i = 0; i < 4; i++)
-            str_size[i] = data_recived[i];
+    if (new_request){ 
+        j = 0;
         for (i = 3; i >= 0; i--)
-            size = size * 256 + (int) str_size[i];
+            str_size[i] = data_recived[j++];
+
+        i = 0;
+        for (i = 0; i < 4; i++){ 
+            temp_char_num[0] = str_size[i];
+            size = size * 256 + (*int_ptr); 
+            *int_ptr = 0;
+        }
+
+for (i = 3; i >= 0; i--){
+    printf(" %d ", (unsigned int) str_size[i]);
+}
 
         current_client->data_length = size; 
         current_client->data = (char *) malloc(size);
-        len -= 4;
+        i = 4;
     }
 
     size = current_client->data_length;
     j = current_client->data_position;
 
-    for ( ; j < size && j < len; )
+    for ( ; j < size && i < len; )
         current_client->data[j++] = data_recived[i++];
 
     current_client->data_position = j;
@@ -143,16 +157,21 @@ on_read(struct bufferevent *buffer_event, void *c_list)
 
     len = evbuffer_get_length(input); 
     data_recived = (char *) malloc(len);
-    bzero(data_recived, len); 
-    evbuffer_remove(input, data_recived, len); 
-
+    bzero(data_recived, len); printf("buffer len: %d\n", len);
+    evbuffer_remove(input, data_recived, len);
+int l; //for (l = 0; l < len; l++) printf("%c", data_recived[l]); printf("\n");
     process_data_from_client(current_client, data_recived, len);
     data_recived = NULL; 
 
+ 
+printf("data len %d data pos %d\n", current_client->data_length, current_client->data_position);
+
     if(current_client->data_length == current_client->data_position && current_client->data_length != 0){
+printf("data len %d data pos %d\n", current_client->data_length, current_client->data_position);
+//for(l = 0; l < current_client->data_position; l++) printf("%c", current_client->data[l]); printf("\n");
         //reply_size = package_reply(request_exit_code, reply, current_client);
         //bufferevent_write(current_client->client_bufferevent, reply, reply_size);
-        bufferevent_write(current_client->client_bufferevent, &current_client->data_length, sizeof(unsigned int));
+        bufferevent_write(current_client->client_bufferevent, &current_client->data_length, 4);
         bufferevent_write(current_client->client_bufferevent, current_client->data, current_client->data_length);
         bufferevent_flush(current_client->client_bufferevent, EV_WRITE, BEV_NORMAL);
         reset_client(current_client);
