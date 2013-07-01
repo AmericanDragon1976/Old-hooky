@@ -22,7 +22,9 @@ class Connection
   end
 
   def receive
+    # puts "receive"
     len = socket.recv(4).unpack('L')[0] # 32-bit unsigned, native endian (uint32_t)
+    # puts "length: #{len}"
     data = ''
     until data.bytes.count == len do
       data += socket.recv (len - data.bytes.count)
