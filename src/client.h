@@ -51,6 +51,7 @@
 #define file_name_len           100     // length of file names
 #define ip_len                  16      // length of ip portion of address
 #define port_len                6       // length of port number portion of address
+#define handle_len				30 		// max length of handles in config file.
 #define listen_address          "127.0.0.1:4000" // default address to listen on for clients 
 
  // structures 
@@ -69,13 +70,14 @@
 
  typedef struct client_list{
     client_node     *head;
+    char 			*base_path;
  } client_list;
 
 // functions
 
 client* new_client(struct bufferevent *input_bev, char *input_data);
 client* new_null_client();
-client_list* new_client_list(client_node *input_node);
+client_list* new_client_list(client_node *input_node, char *path);
 client_list* new_null_client_list();
 client_node* new_client_node(client *input_client, client_node *input_node);
 client_node* new_null_client_node();

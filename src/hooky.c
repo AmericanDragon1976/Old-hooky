@@ -87,10 +87,59 @@ parse_address(char *address_to_parse, char *ip_address, char* port_number)
  * 
  */
 char*
-parse_config(char argv[], char *addr)           // STUB
+parse_config(char argv[], char *addr)          
 {
+    int     len, i, j;
     char    *path = NULL;
+    char    handle[handle_len];
+    char    *buffer = NULL;
+    path = (char *) malloc(file_name_len);
+    FILE    *file_pointer = NULL;
 
+    file_pointer = fopen(argv, "r");
+    if (file_pointer == NULL) {
+        fprintf(stderr, "Unable to open config file. Check file name and path!\n");
+        exit(0);
+    }
+
+    fseek(file_pointer, 0, SEEK_END);
+    len = ftell(file_pointer);
+    rewind(file_pointer);
+
+    buffer = (char *) malloc(len);
+    if (buffer == NULL){
+        fprintf(stderr, "Failed to creat buffer.");
+        exit(0);
+    }
+
+    if (fread(buffer, 1, len, file_pointer) != len) {
+        fprintf(stderr, "Error reading file.\n");
+        exit(0);
+    }
+    fclose(file_pointer);
+
+    for (i = 0; i < len; i++){
+        j = 0;
+        bzero(handle, handle_len);
+        for (; i < len && buffer[i] != '='; i++)
+            handle[j++] = buffer[i]; 
+
+        handle[j++] = '\0'; 
+        i++;
+        if (strcmp(handle, "path") == 0){
+            for (j = 0; i < len && buffer[i] != '\n' && j < file_name_len - 1; i++)
+                path[j++] = buffer[i];
+            path[j] = '\0'; 
+        } else if (strcmp(handle, "address") == 0){
+            for (j = 0; i < len && buffer[i] != '\n' && j < complete_address_len - 1; i++)
+                addr[j++] = buffer[i];
+            addr[j] = '\0'; 
+        } else if (strcmp(handle, "") != 0){
+            fprintf(stderr, "Handle %s unknown. Check config file. \n", handle);
+            exit(0);
+        }
+    }
+    free(buffer);
     return(path);
 }
 
@@ -143,13 +192,12 @@ main(int argc, char **argv)
     struct event_base       *event_loop = event_base_new();
     struct evconnlistener   *listener;
     client_list             *clients = new_null_client_list();
-    char                    *base_path = NULL;
-    char                    client_address[] = listen_address;
+    char                    client_address[complete_address_len] = listen_address;
 
     if(!verify_args(argc, argv))
         usage();
 
-    base_path = parse_config(argv[1], client_address);
+    clients->base_path = parse_config(argv[1], client_address); 
     init_accept_clients(event_loop, listener, clients, client_address);
 
     init_signals(event_loop);

@@ -55,11 +55,12 @@ new_null_client()
  * Allocates memory for new_client_list() and sets pointer members to values passes in.
  */
 client_list* 
-new_client_list(client_node *input_node)
+new_client_list(client_node *input_node, char *path)
 {
     client_list         *new_client_list = (client_list *) malloc(sizeof(client_list));
 
     new_client_list->head = input_node;
+    new_client_list->base_path = path;
 
     return(new_client_list);
 }
@@ -70,7 +71,7 @@ new_client_list(client_node *input_node)
 client_list* 
 new_null_client_list()
 {
-    return(new_client_list(NULL));
+    return(new_client_list(NULL, NULL));
 }
 
 /*

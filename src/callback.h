@@ -29,8 +29,7 @@
 
 void on_connect(struct evconnlistener *listener, evutil_socket_t fd, struct sockaddr *address, int socklen, void *c_list);
 void process_data_from_client(client *current_client, char *data_recived, int len);
-int execute_request(client *current_client);
-int package_reply(int request_exit_code, char *reply, client *current_client);
+int execute_request(client *current_client, char *path);
 void reset_client(client *current_client);
 void on_read(struct bufferevent *buffer_event, void *c_list);
 void signal_cb (evutil_socket_t sig, short events, void *user_data);

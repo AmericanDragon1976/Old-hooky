@@ -92,22 +92,21 @@ process_data_from_client(client *current_client, char *data_recived, int len)
  * 
  */
 int 
-execute_request(client *current_client)  //  STUB
+execute_request(client *current_client, char* path)  
 {
-    int         exit_code;
+    int         exit_code, len;
+    char        *command = NULL;
+
+    len = current_client->data_length + strlen(path) + 1;
+    command = (char *) malloc(len);
+    strcpy(command, path);
+    strcat(command, current_client->data);
+    command[len -1] = '\0';
+
+    exit_code = system(command);
+    free(command);
 
     return(exit_code);
-}
-
-/*
- * 
- */
-int 
-package_reply(int request_exit_code, char *reply, client *current_client)  //  STUB
-{
-    int         package_size;
-
-    return(package_size);
 }
 
 /*
@@ -135,7 +134,6 @@ on_read(struct bufferevent *buffer_event, void *c_list)
     struct evbuffer *input = bufferevent_get_input(buffer_event);
     int             len, request_exit_code, reply_size;
     char            *data_recived = NULL;
-    char            *reply = NULL;
 
     while (current_node != NULL){
         if (current_node->client_data != NULL){
@@ -160,10 +158,10 @@ on_read(struct bufferevent *buffer_event, void *c_list)
     data_recived = NULL; 
 
     if(current_client->data_length == current_client->data_position && current_client->data_length != 0){
-        //reply_size = package_reply(request_exit_code, reply, current_client);
-        //bufferevent_write(current_client->client_bufferevent, reply, reply_size);
-        bufferevent_write(current_client->client_bufferevent, &current_client->data_length, 4);
-        bufferevent_write(current_client->client_bufferevent, current_client->data, current_client->data_length);
+        request_exit_code = execute_request(current_client, clients->base_path);
+        reply_size = sizeof(request_exit_code);
+        bufferevent_write(current_client->client_bufferevent, &reply_size, 4);
+        bufferevent_write(current_client->client_bufferevent, &request_exit_code, reply_size);
         bufferevent_flush(current_client->client_bufferevent, EV_WRITE, BEV_NORMAL);
         reset_client(current_client);
     }
