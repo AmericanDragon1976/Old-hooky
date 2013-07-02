@@ -103,7 +103,11 @@ execute_request(client *current_client, char* path)
     strcat(command, current_client->data);
     command[len -1] = '\0';
 
-    exit_code = system(command);
+    if (file_exist(command))
+        exit_code = system(command);
+    else 
+        exit_code = 0;
+
     free(command);
 
     return(exit_code);
@@ -115,7 +119,6 @@ execute_request(client *current_client, char* path)
 void 
 reset_client(client *current_client)
 {
-    //current_client->channel = 0;
     current_client->data_length = 0;
     current_client->data_position = 0;
     free(current_client->data);
