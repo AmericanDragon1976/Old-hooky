@@ -54,8 +54,8 @@
 #define port_len                6       // length of port number portion of address
 #define handle_len				30 		// max length of handles in config file.
 #define listen_address          "127.0.0.1:4000" // default address to listen on for clients 
-#define standard_output			"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed nisl turpis, auctor eu nisi vitae, rutrum dictum erat. Donec tempor, nulla nec venenatis porttitor, magna orci tincidunt nulla, et lacinia augue magna vel lacus. Nulla facilisi. Aliquam erat volutpat. Vivamus vestibulum scelerisque nisl. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Ut euismod nisi vitae est vehicula elementum. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos."
-#define standard_error			"Curabitur semper justo arcu, quis tincidunt justo tempor in. Etiam sagittis nunc eu viverra venenatis. Nunc sed orci eu purus varius varius non eget."
+#define standard_output			"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Standard out, auctor eu nisi vitae, rutrum dictum erat. Donec tempor, nulla nec venenatis porttitor, magna orci tincidunt nulla, et lacinia augue magna vel lacus. Nulla facilisi. Aliquam erat volutpat. Vivamus vestibulum scelerisque nisl. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Ut euismod nisi vitae est vehicula elementum. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos."
+#define standard_error			"Curabitur semper justo arcu, quis tincidunt justo tempor in. Standard error nunc eu viverra venenatis. Nunc sed orci eu purus varius varius non eget."
 
  // structures 
 

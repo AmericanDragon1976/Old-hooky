@@ -100,13 +100,14 @@ execute_request(client *current_client, char* path)
     json_object *hook = json_object_object_get(jobj, "hook");
     json_object *payload = json_object_object_get(jobj, "payload");
 
-    len = strlen(path) + json_object_get_string_len(hook) + json_object_get_string_len(payload) + 1;
-    command = (char *) malloc(len);
-    strcpy(command, path);
-    strcat(command, json_object_get_string(hook));
+    len = strlen(path) + json_object_get_string_len(hook) + json_object_get_string_len(payload) + 2;
+    command = (char *) malloc(len); //printf("path: %s\n", path);
+    strcpy(command, path); //printf("hook: %s\n", json_object_get_string(hook));
+    strcat(command, json_object_get_string(hook));//printf("payload: %s\n", json_object_get_string(payload));
+    strcat(command, " ");
     strcat(command, json_object_get_string(payload));
     command[len -1] = '\0';
-
+//printf("command: %s\n", command);
     if (file_exist(command))
         exit_code = system(command);
     else 
@@ -115,6 +116,28 @@ execute_request(client *current_client, char* path)
     free(command);
 
     return(exit_code);
+}
+
+/*
+ * 
+ */
+char* 
+package_reply(int request_exit_code, int *len, char *reply)
+{
+    char                        *std_out[] = {standard_output};
+    struct json_object          *reply_json_object = json_object_new_object();
+    struct json_object          *temp_int_json_object = json_object_new_int64(request_exit_code);
+    struct json_object          *temp_string_json_object = json_object_new_string(&standard_output);
+
+    json_object_object_add  (reply_json_object, &"exit code ", temp_int_json_object);
+    json_object_object_add  (reply_json_object, &"standard out ", temp_string_json_object);
+    temp_string_json_object = json_object_new_string(&standard_error);
+    json_object_object_add  (reply_json_object, &"standard error ", temp_string_json_object);
+
+    reply = json_object_to_json_string(reply_json_object);
+    *len = strlen(reply);
+printf("reply: %s len: %d\n", reply, *len);
+    return(reply);
 }
 
 /*
@@ -140,7 +163,7 @@ on_read(struct bufferevent *buffer_event, void *c_list)
     client          *current_client = NULL;
     struct evbuffer *input = bufferevent_get_input(buffer_event);
     int             len, request_exit_code, reply_size;
-    char            *data_recived = NULL;
+    char            *data_recived = NULL, *reply_txt = NULL;
 
     while (current_node != NULL){
         if (current_node->client_data != NULL){
@@ -166,11 +189,11 @@ on_read(struct bufferevent *buffer_event, void *c_list)
 
     if(current_client->data_length == current_client->data_position && current_client->data_length != 0){
         request_exit_code = execute_request(current_client, clients->base_path);
-        reply_size = sizeof(request_exit_code);
-        bufferevent_write(current_client->client_bufferevent, &reply_size, 4);
-        bufferevent_write(current_client->client_bufferevent, &request_exit_code, reply_size);
-        bufferevent_flush(current_client->client_bufferevent, EV_WRITE, BEV_NORMAL);
-        reset_client(current_client);
+        reply_txt = package_reply(request_exit_code, &reply_size, reply_txt); //printf("reply size: %d reply txt: %s\n", reply_size, reply_txt);
+        bufferevent_write(current_client->client_bufferevent, &reply_size, 4); //printf("first write to buffer, reply size %d\n", strlen(reply_txt));
+        bufferevent_write(current_client->client_bufferevent, reply_txt, reply_size); //printf("second write to buffer, reply_txt \n");
+        bufferevent_flush(current_client->client_bufferevent, EV_WRITE, BEV_NORMAL); //printf("buffer flushed\n");
+        reset_client(current_client); //printf("client reset \n");
     }
 }
 
