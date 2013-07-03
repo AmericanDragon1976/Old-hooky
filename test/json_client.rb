@@ -60,4 +60,4 @@ request = {
 
 connection.deliver MultiJson.dump(request)
 
-puts connection.receive
+puts "response: #{connection.receive.inspect}"
