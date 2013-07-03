@@ -60,4 +60,6 @@ request = {
 
 connection.deliver MultiJson.dump(request)
 
-puts "response: #{connection.receive.inspect}"
+response = connection.receive
+
+puts MultiJson.load(response, symbolize_keys: true)
