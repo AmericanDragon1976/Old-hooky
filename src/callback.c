@@ -96,11 +96,15 @@ execute_request(client *current_client, char* path)
 {
     int         exit_code, len;
     char        *command = NULL;
+    json_object *jobj = json_tokener_parse(current_client->data);
+    json_object *hook = json_object_object_get(jobj, "hook");
+    json_object *payload = json_object_object_get(jobj, "payload");
 
-    len = current_client->data_length + strlen(path) + 1;
+    len = strlen(path) + json_object_get_string_len(hook) + json_object_get_string_len(payload) + 1;
     command = (char *) malloc(len);
     strcpy(command, path);
-    strcat(command, current_client->data);
+    strcat(command, json_object_get_string(hook));
+    strcat(command, json_object_get_string(payload));
     command[len -1] = '\0';
 
     if (file_exist(command))
