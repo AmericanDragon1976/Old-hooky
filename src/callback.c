@@ -94,7 +94,7 @@ process_data_from_client(client *current_client, char *data_recived, int len)
 int 
 execute_request(client *current_client, char* path)  
 {
-    int         exit_code, len;
+    int         exit_code, len, i;
     char        *command = NULL;
     json_object *jobj = json_tokener_parse(current_client->data);
     json_object *hook = json_object_object_get(jobj, "hook");
@@ -105,6 +105,10 @@ execute_request(client *current_client, char* path)
     strcpy(command, path); //printf("hook: %s\n", json_object_get_string(hook));
     strcat(command, json_object_get_string(hook));//printf("payload: %s\n", json_object_get_string(payload));
     strcat(command, " ");
+    for (i = 0; i < len; i++)
+        if (command[i] == '.')
+            command[i] = '/';
+
     strcat(command, json_object_get_string(payload));
     command[len -1] = '\0';
 //printf("command: %s\n", command);
@@ -127,16 +131,16 @@ package_reply(int request_exit_code, int *len, char *reply)
     char                        *std_out[] = {standard_output};
     struct json_object          *reply_json_object = json_object_new_object();
     struct json_object          *temp_int_json_object = json_object_new_int64(request_exit_code);
-    struct json_object          *temp_string_json_object = json_object_new_string(&standard_output);
+    struct json_object          *temp_string_json_object = json_object_new_string(standard_output);
 
-    json_object_object_add  (reply_json_object, &"exit code ", temp_int_json_object);
-    json_object_object_add  (reply_json_object, &"standard out ", temp_string_json_object);
-    temp_string_json_object = json_object_new_string(&standard_error);
-    json_object_object_add  (reply_json_object, &"standard error ", temp_string_json_object);
+    json_object_object_add  (reply_json_object, "exit code ", temp_int_json_object);
+    json_object_object_add  (reply_json_object, "standard out ", temp_string_json_object);
+    temp_string_json_object = json_object_new_string(standard_error);
+    json_object_object_add  (reply_json_object, "standard error ", temp_string_json_object);
 
     reply = json_object_to_json_string(reply_json_object);
     *len = strlen(reply);
-printf("reply: %s len: %d\n", reply, *len);
+//printf("reply: %s len: %d\n", reply, *len);
     return(reply);
 }
 
