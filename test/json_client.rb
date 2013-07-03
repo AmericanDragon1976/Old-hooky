@@ -18,17 +18,22 @@ class Connection
   end
 
   def deliver(message)
+    puts "delivering: #{message}"
     socket.print [message.bytes.count].pack('L') # 32-bit unsigned, native endian (uint32_t)
     socket.print message
     socket.flush
+    puts "message delivered"
   end
 
   def receive
+    puts "receiving response"
     len = socket.recv(4).unpack('L')[0] # 32-bit unsigned, native endian (uint32_t)
+    puts "response length: #{len}"
     data = ''
     until data.bytes.count == len do
       data += socket.recv (len - data.bytes.count)
     end
+    puts "response received"
     data
   end
 
