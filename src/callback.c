@@ -29,17 +29,20 @@
 /*
  * 
  */
-void on_connect(struct evconnlistener *listener, evutil_socket_t fd, struct sockaddr *address, int socklen, void *c_list)
-{
-    struct event_base   *event_loop = evconnlistener_get_base(listener);
-    client_list         *clients = (client_list *) c_list;
+void on_connect(uv_stream_t *listener, evutil_socket_t fd,  int status)
+{    
+    if (status == -1) {
+        fprintf(stderr, "Error on client connect. \n");
+        return;
+    }
+
     client              *connecting_client = new_null_client();
 
-    connecting_client->client_bufferevent = bufferevent_socket_new(event_loop, fd, BEV_OPT_CLOSE_ON_FREE|EV_PERSIST);
-    bufferevent_setcb(connecting_client->client_bufferevent, on_read, NULL, event_cb, clients);
-    bufferevent_enable(connecting_client->client_bufferevent, EV_READ|EV_WRITE);
+    //connecting_client->client_bufferevent = bufferevent_socket_new(event_loop, fd, BEV_OPT_CLOSE_ON_FREE|EV_PERSIST);
+    //bufferevent_setcb(connecting_client->client_bufferevent, on_read, NULL, event_cb, clients);
+    //bufferevent_enable(connecting_client->client_bufferevent, EV_READ|EV_WRITE);
 
-    clients->head = new_client_node(connecting_client, clients->head); 
+    //clients->head = new_client_node(connecting_client, clients->head); 
 }
 
 /*

@@ -9,8 +9,8 @@
 /* Define to 1 if you have the `event_openssl' library (-levent_openssl). */
 #undef HAVE_LIBEVENT_OPENSSL
 
-/* Define to 1 if you have the `json' library (-ljson). */
-#undef HAVE_LIBJSON
+/* Define to 1 if you have the `json-c' library (-ljson-c). */
+#undef HAVE_LIBJSON_C
 
 /* Name of package */
 #undef PACKAGE

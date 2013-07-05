@@ -4,14 +4,14 @@
 /* Define to 1 if you have the `crypto' library (-lcrypto). */
 #define HAVE_LIBCRYPTO 1
 
-/* Define to 1 if you have the `event' library (-levent). */
-#define HAVE_LIBEVENT 1
-
 /* Define to 1 if you have the `event_openssl' library (-levent_openssl). */
 #define HAVE_LIBEVENT_OPENSSL 1
 
 /* Define to 1 if you have the `json-c' library (-ljson-c). */
 #define HAVE_LIBJSON_C 1
+
+/* Define to 1 if you have the `uv' library (-luv). */
+#define HAVE_LIBUV 1
 
 /* Name of package */
 #define PACKAGE "hooky"

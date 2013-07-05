@@ -3288,13 +3288,13 @@ fi
 
 
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for event_base_new in -levent" >&5
-$as_echo_n "checking for event_base_new in -levent... " >&6; }
-if ${ac_cv_lib_event_event_base_new+:} false; then :
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for uv_loop_new in -luv" >&5
+$as_echo_n "checking for uv_loop_new in -luv... " >&6; }
+if ${ac_cv_lib_uv_uv_loop_new+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   ac_check_lib_save_LIBS=$LIBS
-LIBS="-levent  $LIBS"
+LIBS="-luv  $LIBS"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -3304,32 +3304,32 @@ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 #ifdef __cplusplus
 extern "C"
 #endif
-char event_base_new ();
+char uv_loop_new ();
 int
 main ()
 {
-return event_base_new ();
+return uv_loop_new ();
   ;
   return 0;
 }
 _ACEOF
 if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_event_event_base_new=yes
+  ac_cv_lib_uv_uv_loop_new=yes
 else
-  ac_cv_lib_event_event_base_new=no
+  ac_cv_lib_uv_uv_loop_new=no
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
 LIBS=$ac_check_lib_save_LIBS
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_event_event_base_new" >&5
-$as_echo "$ac_cv_lib_event_event_base_new" >&6; }
-if test "x$ac_cv_lib_event_event_base_new" = xyes; then :
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_uv_uv_loop_new" >&5
+$as_echo "$ac_cv_lib_uv_uv_loop_new" >&6; }
+if test "x$ac_cv_lib_uv_uv_loop_new" = xyes; then :
   cat >>confdefs.h <<_ACEOF
-@%:@define HAVE_LIBEVENT 1
+@%:@define HAVE_LIBUV 1
 _ACEOF
 
-  LIBS="-levent $LIBS"
+  LIBS="-luv $LIBS"
 
 fi
 

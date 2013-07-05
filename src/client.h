@@ -37,11 +37,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
-#include <event2/bufferevent_ssl.h>
-#include <event2/bufferevent.h>
-#include <event2/buffer.h>
-#include <event2/listener.h>
-#include <event2/util.h>
+#include <uv.h>
 
 #include <signal.h>
 #include <ctype.h>
@@ -60,7 +56,7 @@
  // structures 
 
  typedef struct client{
-    struct bufferevent      *client_bufferevent;
+    //struct bufferevent      *client_bufferevent;
     unsigned int            data_length;
     char                    *data;
     unsigned int            data_position;
@@ -75,6 +71,9 @@
     client_node     *head;
     char 			*base_path;
  } client_list;
+
+ extern client_list 	*clients;
+ extern uv_loop_t       *loop;
 
 // functions
 

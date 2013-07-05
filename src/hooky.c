@@ -26,6 +26,9 @@
 #include "hooky.h"
 #include "callback.h"
 
+ client_list    *clients;
+ uv_loop_t       *loop;
+
 void 
 usage()
 {
@@ -147,24 +150,26 @@ parse_config(char argv[], char *addr)
  * 
  */
 void 
-init_accept_clients(struct event_base *event_loop, struct evconnlistener *client_listener, client_list *clients, char address[])
+init_accept_clients(uv_loop_t *loop, uv_tcp_t *client_listener, char address[])
 {
     char                ip_address[ip_len], port_number[port_len];
     struct sockaddr_in  svc_address;
     struct in_addr      *ip_bytes = (struct in_addr *) malloc (sizeof(struct in_addr));
 
-    if (parse_address(address, ip_address, port_number)){
+    if (parse_address(address, ip_address, port_number)){               //uv_ip4_addr("0.0.0.0", 7000)
         inet_aton(ip_address, ip_bytes); 
         memset(&svc_address, 0, sizeof(svc_address));
         svc_address.sin_family = AF_INET;
         svc_address.sin_addr.s_addr = (*ip_bytes).s_addr; 
         svc_address.sin_port = htons(atoi(port_number));
-        client_listener = evconnlistener_new_bind(event_loop, on_connect, clients, LEV_OPT_CLOSE_ON_FREE|LEV_OPT_REUSEABLE, -1, (struct sockaddr *) &svc_address, sizeof(svc_address));
-        if (!client_listener)
-            printf("Couldn't create Listener\n");
-    } 
-    else {
-        fprintf(stderr, "Bad address for listeners \n");
+
+    uv_tcp_init(loop, &listener);
+    uv_tcp_bind(&server, svc_address);
+
+    int r = uv_listen((uv_stream_t*) client_listener, 128, on_connect);
+    if (r) {
+        fprintf(stderr, "Listen error %s\n", uv_err_name(uv_last_error(loop)));
+        return 1;
     }
 }
 
@@ -189,18 +194,19 @@ init_signals(struct event_base *event_loop)
 int
 main(int argc, char **argv)
 {
-    struct event_base       *event_loop = event_base_new();
-    struct evconnlistener   *listener;
-    client_list             *clients = new_null_client_list();
+    uv_tcp_t                listener;
     char                    client_address[complete_address_len] = listen_address;
 
     if(!verify_args(argc, argv))
         usage();
 
-    clients->base_path = parse_config(argv[1], client_address); 
-    init_accept_clients(event_loop, listener, clients, client_address);
+    clients = new_null_client_list();
+    loop = uv_loop_new();
 
-    init_signals(event_loop);
-    event_base_dispatch(event_loop);
-    event_base_free(event_loop);
+    clients->base_path = parse_config(argv[1], client_address); 
+    init_accept_clients(loop, &listener, client_address);
+
+    //init_signals(event_loop);
+    uv_run(loop, UV_RUN_DEFAULT);
+    //event_base_free(event_loop);
 }
