@@ -133,10 +133,10 @@ package_reply(int request_exit_code, int *len, char *reply)
     struct json_object          *temp_int_json_object = json_object_new_int64(request_exit_code);
     struct json_object          *temp_string_json_object = json_object_new_string(standard_output);
 
-    json_object_object_add  (reply_json_object, "exit code ", temp_int_json_object);
-    json_object_object_add  (reply_json_object, "standard out ", temp_string_json_object);
+    json_object_object_add  (reply_json_object, "exit_code", temp_int_json_object);
+    json_object_object_add  (reply_json_object, "stdout", temp_string_json_object);
     temp_string_json_object = json_object_new_string(standard_error);
-    json_object_object_add  (reply_json_object, "standard error ", temp_string_json_object);
+    json_object_object_add  (reply_json_object, "stderr", temp_string_json_object);
 
     reply = json_object_to_json_string(reply_json_object);
     *len = strlen(reply);
