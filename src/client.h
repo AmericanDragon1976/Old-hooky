@@ -56,7 +56,7 @@
  // structures 
 
  typedef struct client{
-    //struct bufferevent      *client_bufferevent;
+    uv_tcp_t 				*client_connection;
     unsigned int            data_length;
     char                    *data;
     unsigned int            data_position;
@@ -70,6 +70,7 @@
  typedef struct client_list{
     client_node     *head;
     char 			*base_path;
+    uv_tcp_t        listener;
  } client_list;
 
  extern client_list 	*clients;
@@ -77,7 +78,7 @@
 
 // functions
 
-client* new_client(struct bufferevent *input_bev, char *input_data);
+client* new_client(uv_tcp_t *input_connection, char *input_data);
 client* new_null_client();
 client_list* new_client_list(client_node *input_node, char *path);
 client_list* new_null_client_list();

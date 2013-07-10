@@ -162,14 +162,17 @@ init_accept_clients(uv_loop_t *loop, uv_tcp_t *client_listener, char address[])
         svc_address.sin_family = AF_INET;
         svc_address.sin_addr.s_addr = (*ip_bytes).s_addr; 
         svc_address.sin_port = htons(atoi(port_number));
+    } 
+    else {
+        fprintf(stderr, "Failed to parse address %s\n", address);
+    }
 
-    uv_tcp_init(loop, &listener);
-    uv_tcp_bind(&server, svc_address);
+    uv_tcp_init(loop, client_listener);
+    uv_tcp_bind(client_listener, svc_address);
 
     int r = uv_listen((uv_stream_t*) client_listener, 128, on_connect);
     if (r) {
         fprintf(stderr, "Listen error %s\n", uv_err_name(uv_last_error(loop)));
-        return 1;
     }
 }
 
@@ -180,20 +183,16 @@ init_accept_clients(uv_loop_t *loop, uv_tcp_t *client_listener, char address[])
  * all memory and shuts down the event loop instead of simply letting it crash.
  */
 void 
-init_signals(struct event_base *event_loop)
+init_signals(uv_signal_t *signal_event)
 {    
-    struct event *signal_event = NULL;
-
-    signal_event = evsignal_new(event_loop, SIGINT, signal_cb, (void *) event_loop);
-    if (!signal_event || event_add(signal_event, NULL) < 0) {
-        fprintf(stderr, "Could not create/add signal event.\n");
-        exit(0);
-    }
+    uv_signal_init(loop, signal_event);
+    uv_signal_start(signal_event, signal_cb, SIGINT);
 }
 
 int
 main(int argc, char **argv)
 {
+    uv_signal_t             signal_event;
     uv_tcp_t                listener;
     char                    client_address[complete_address_len] = listen_address;
 
@@ -204,9 +203,8 @@ main(int argc, char **argv)
     loop = uv_loop_new();
 
     clients->base_path = parse_config(argv[1], client_address); 
-    init_accept_clients(loop, &listener, client_address);
+    init_accept_clients(loop, &(clients->listener), client_address);
 
-    //init_signals(event_loop);
+    init_signals(&signal_event);
     uv_run(loop, UV_RUN_DEFAULT);
-    //event_base_free(event_loop);
 }

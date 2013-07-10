@@ -30,11 +30,11 @@
  * Allocates memory for a new client sets pointer members to values passes in, and set other values to 0.
  */
 client* 
-new_client(struct bufferevent *input_bev, char *input_data)
+new_client(uv_tcp_t *input_connection, char *input_data)
 {
     client          *new_client = (client *) malloc(sizeof(client));
 
-    new_client->client_bufferevent = input_bev;
+    new_client->client_connection = input_connection;
     new_client->data_length = 0;
     new_client->data = input_data;
     new_client->data_position = 0;
@@ -48,7 +48,9 @@ new_client(struct bufferevent *input_bev, char *input_data)
 client* 
 new_null_client()
 {
-    return(new_client(NULL, NULL));
+    uv_tcp_t        *new_connection = (uv_tcp_t *) malloc(sizeof(uv_tcp_t));
+
+    return(new_client(new_connection, NULL));
 }
 
 /*
@@ -106,8 +108,10 @@ free_client(client *old_client)
     if (old_client == NULL)
         return(NULL);
 
-    if (old_client->client_bufferevent != NULL)
-        bufferevent_free(old_client->client_bufferevent);
+    if (old_client->client_connection != NULL){
+        uv_close((uv_handle_t*) old_client->client_connection, NULL);
+        free(old_client->client_connection);
+    }
 
     if (old_client->data != NULL)
         free(old_client->data);
@@ -162,7 +166,7 @@ print_client(client *client_to_print)
     }
     else {
         printf("Client \n");
-        printf("client_bev: %p\n",client_to_print->client_bufferevent);
+        printf("client_connection: %p\n",client_to_print->client_connection);
         printf("data_len: %d\n", client_to_print->data_length);
         printf("data: ");
         int i;

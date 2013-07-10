@@ -27,14 +27,14 @@
 
  // functions 
 
-void on_connect(struct evconnlistener *listener, evutil_socket_t fd, struct sockaddr *address, int socklen, void *c_list);
-void process_data_from_client(client *current_client, char *data_recived, int len);
+void on_connect(uv_stream_t *server, int status);
+void process_data_from_client(client *current_client, ssize_t nread, uv_buf_t buf);
 int execute_request(client *current_client, char *path);
 void reset_client(client *current_client);
-void on_read(struct bufferevent *buffer_event, void *c_list);
-void signal_cb (evutil_socket_t sig, short events, void *user_data);
-void client_dc(struct bufferevent *buffer_event, void *ctx);
-void event_cb(struct bufferevent *buffer_event, short what, void *ctx);
+void on_read(uv_stream_t *client, ssize_t nread, uv_buf_t buf);
+void signal_cb (uv_signal_t *sig_event, int signum);
+void client_dc(/*struct bufferevent *buffer_event,*/ void *ctx);
+void event_cb(/*struct bufferevent *buffer_event,*/ short what, void *ctx);
 bool file_exist(char *file_path);
 
 #endif 

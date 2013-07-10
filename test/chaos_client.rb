@@ -56,7 +56,7 @@ end
 
 current_iteration = 0
 
-100.times do
+10.times do
 
   current_iteration += 1
   puts current_iteration if current_iteration % 10000 == 0

@@ -31,7 +31,7 @@ void usage();
 bool verify_args(int num_args, char **argv);
 bool parse_address(char *address_to_parse, char *ip_address, char* port_number);
 char* parse_config(char argv[], char *addr);
-void init_accept_clients(struct event_base *event_loop, struct evconnlistener *client_listener, client_list *clients, char address[]);
-void init_signals(struct event_base *event_loop);
+void init_accept_clients(uv_loop_t *loop, uv_tcp_t *client_listener, char address[]);
+void init_signals(uv_signal_t *signal_event);
 
 #endif
