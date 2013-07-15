@@ -27,14 +27,20 @@
 
  // functions 
 
+uv_buf_t alloc_buffer(uv_handle_t *handle, size_t suggested_size);
+void child_exit(uv_process_t *req, int exit_status, int term_signal);
+void read_out(uv_stream_t *out_pipe, ssize_t nread, uv_buf_t buf);
+void read_err(uv_stream_t *err_pipe, ssize_t nread, uv_buf_t buf);
 void on_connect(uv_stream_t *server, int status);
 void process_data_from_client(client *current_client, ssize_t nread, uv_buf_t buf);
-int execute_request(client *current_client, char *path);
+void execute_request(client *current_client, char *path);
+char* package_reply(int *len);
+void send_reply (char *reply, int len);
 void reset_client(client *current_client);
+void on_write (uv_write_t *req, int status);
 void on_read(uv_stream_t *client, ssize_t nread, uv_buf_t buf);
 void signal_cb (uv_signal_t *sig_event, int signum);
-void client_dc(/*struct bufferevent *buffer_event,*/ void *ctx);
-void event_cb(/*struct bufferevent *buffer_event,*/ short what, void *ctx);
-bool file_exist(char *file_path);
+void client_dc(void *ctx);
+void event_cb(short what, void *ctx);
 
 #endif 

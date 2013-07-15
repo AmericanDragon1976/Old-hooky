@@ -49,6 +49,7 @@
 #define ip_len                  16      // length of ip portion of address
 #define port_len                6       // length of port number portion of address
 #define handle_len				30 		// max length of handles in config file.
+#define data_size				1000 	// starting size of strings to hold standrd out and standard error being reuturned, also increse inremen size.
 #define listen_address          "127.0.0.1:4000" // default address to listen on for clients 
 #define standard_output			"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Standard out, auctor eu nisi vitae, rutrum dictum erat. Donec tempor, nulla nec venenatis porttitor, magna orci tincidunt nulla, et lacinia augue magna vel lacus. Nulla facilisi. Aliquam erat volutpat. Vivamus vestibulum scelerisque nisl. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Ut euismod nisi vitae est vehicula elementum. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos."
 #define standard_error			"Curabitur semper justo arcu, quis tincidunt justo tempor in. Standard error nunc eu viverra venenatis. Nunc sed orci eu purus varius varius non eget."
@@ -57,9 +58,12 @@
 
  typedef struct client{
     uv_tcp_t 				*client_connection;
-    unsigned int            data_length;
-    char                    *data;
-    unsigned int            data_position;
+    unsigned int            data_length, out_len, err_len;
+    char                    *data, *out_output, *err_output;
+    unsigned int            data_position, out_position, err_position;
+    uv_pipe_t 				out_pipe, err_pipe;
+    int 					exit_code;
+    uv_process_t 			child_req;
  } client;
 
  typedef struct client_node{

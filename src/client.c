@@ -38,6 +38,12 @@ new_client(uv_tcp_t *input_connection, char *input_data)
     new_client->data_length = 0;
     new_client->data = input_data;
     new_client->data_position = 0;
+    new_client->out_len = data_size;
+    new_client->out_output = (char *) malloc(new_client->out_len);
+    new_client->out_position = 0;
+    new_client->err_len = data_size;
+    new_client->err_output = (char *) malloc(new_client->err_len);
+    new_client->err_position = 0;
 
     return(new_client);
 }
@@ -106,18 +112,16 @@ client*
 free_client(client *old_client)
 {
     if (old_client == NULL)
-        return(NULL);
+        return(old_client);
 
-    if (old_client->client_connection != NULL){
-        uv_close((uv_handle_t*) old_client->client_connection, NULL);
-        free(old_client->client_connection);
-    }
-
-    if (old_client->data != NULL)
-        free(old_client->data);
-
+    uv_close((uv_handle_t*) old_client->client_connection, NULL);
+    free(old_client->client_connection);
+    free(old_client->data);
+    free(out_output);
+    free(err_output);
     free(old_client);
-    return(NULL);
+    old_client = NULL:
+    return(old_client);
 }
 
 /*
@@ -127,13 +131,14 @@ client_list*
 free_client_list(client_list *old_list)
 {
     if (old_list == NULL)
-        return(NULL);
+        return(old_list);
 
     if (old_list->head != NULL)
         old_list->head = free_client_node(old_list->head);
 
     free(old_list);
-    return(NULL);
+    old_list = NULL;
+    return(old_list);
 }
 
 /*
@@ -143,7 +148,7 @@ client_node*
 free_client_node(client_node *old_node)
 {
     if (old_node == NULL)
-        return (NULL);
+        return (old_node);
 
     if (old_node->client_data != NULL)
         old_node->client_data = free_client(old_node->client_data);
@@ -152,7 +157,8 @@ free_client_node(client_node *old_node)
         old_node->next = free_client_node(old_node->next);
 
     free(old_node);
-    return(NULL);
+    old_node = NULL;
+    return(old_node);
 }
 
 /*
