@@ -41,9 +41,11 @@ new_client(uv_tcp_t *input_connection, char *input_data)
     new_client->out_len = data_size;
     new_client->out_output = (char *) malloc(new_client->out_len);
     new_client->out_position = 0;
+    new_client->out_output[0] = '\0';
     new_client->err_len = data_size;
     new_client->err_output = (char *) malloc(new_client->err_len);
     new_client->err_position = 0;
+    new_client->err_output[0] = '\0';
 
     return(new_client);
 }
@@ -117,10 +119,10 @@ free_client(client *old_client)
     uv_close((uv_handle_t*) old_client->client_connection, NULL);
     free(old_client->client_connection);
     free(old_client->data);
-    free(out_output);
-    free(err_output);
+    free(old_client->out_output);
+    free(old_client->err_output);
     free(old_client);
-    old_client = NULL:
+    old_client = NULL;
     return(old_client);
 }
 

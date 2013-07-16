@@ -60,7 +60,8 @@ hooky.o: hooky.c client.h /usr/local/include/json/json.h \
  /usr/include/asm-generic/sockios.h \
  /usr/include/x86_64-linux-gnu/bits/socket2.h /usr/include/netinet/in.h \
  /usr/include/x86_64-linux-gnu/bits/in.h /usr/local/include/uv.h \
- /usr/local/include/uv-unix.h /usr/include/x86_64-linux-gnu/sys/stat.h \
+ /usr/local/include/uv-errno.h /usr/local/include/uv-unix.h \
+ /usr/include/x86_64-linux-gnu/sys/stat.h \
  /usr/include/x86_64-linux-gnu/bits/stat.h /usr/include/fcntl.h \
  /usr/include/x86_64-linux-gnu/bits/fcntl.h \
  /usr/include/x86_64-linux-gnu/bits/fcntl2.h /usr/include/netinet/tcp.h \
@@ -248,6 +249,8 @@ client.h:
 /usr/include/x86_64-linux-gnu/bits/in.h:
 
 /usr/local/include/uv.h:
+
+/usr/local/include/uv-errno.h:
 
 /usr/local/include/uv-unix.h:
 

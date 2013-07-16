@@ -172,7 +172,7 @@ init_accept_clients(uv_loop_t *loop, uv_tcp_t *client_listener, char address[])
 
     int r = uv_listen((uv_stream_t*) client_listener, 128, on_connect);
     if (r) {
-        fprintf(stderr, "Listen error %s\n", uv_err_name(uv_last_error(loop)));
+        fprintf(stderr, "Listen error \n");
     }
 }
 
@@ -206,5 +206,5 @@ main(int argc, char **argv)
     init_accept_clients(loop, &(clients->listener), client_address);
 
     init_signals(&signal_event);
-    uv_run(loop, UV_RUN_DEFAULT);
+    uv_run(loop, UV_RUN_DEFAULT); printf("end main \n");
 }
