@@ -94,5 +94,6 @@ client_node* free_client_node(client_node *old_node);
 void print_client(client *client_to_print);
 void print_client_node(client_node *node_to_print);
 void print_client_list(client_list *list_to_print);
+client* find_client_from_pipe(uv_stream_t *info_pipe);
 
 #endif 

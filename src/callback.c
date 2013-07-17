@@ -68,14 +68,34 @@ fprintf(stderr, "Process exited with status %d, signal %d\n", exit_status, term_
 
 void 
 read_out(uv_stream_t *out_pipe, ssize_t nread, uv_buf_t buf)
-{
-    printf("read_out size %d\n", (int) nread);
+{printf("read_out\n");
+
+    int             buffer_size_increase = 0, i;
+    client          *current_client = find_client_from_pipe(out_pipe);
+
+    while (current_client->out_position + nread > current_client->out_len + buffer_size_increase)
+        buffer_size_increase += data_size;
+
+    current_client->out_output = realloc (current_client->out_output, current_client->out_len + buffer_size_increase);
+
+    for (i = 0; i < nread; i++)
+        current_client->out_output[current_client->out_position++] = buf.base[i];
 }
 
 void 
 read_err(uv_stream_t *err_pipe, ssize_t nread, uv_buf_t buf)
-{
-    printf("read_err size %d\n", (int) nread);
+{printf("read_err\n");
+
+    int             buffer_size_increase = 0, i;
+    client          *current_client = find_client_from_pipe(err_pipe);
+
+    while (current_client->err_position + nread > current_client->err_len + buffer_size_increase)
+        buffer_size_increase += data_size;
+
+    current_client->err_output = realloc (current_client->err_output, current_client->err_len + buffer_size_increase);
+
+    for (i = 0; i < nread; i++)
+        current_client->err_output[current_client->err_position++] = buf.base[i];
 }
 
 /*
@@ -168,8 +188,7 @@ execute_request(client *current_client, char* path)
     json_object             *hook = json_object_object_get(jobj, "hook");
     json_object             *payload = json_object_object_get(jobj, "payload");
     uv_process_options_t    options = {0};
-    //
-
+    
 // TODO: add validation to prevent malformed requests from crashing the program.
     i = json_object_get_string_len(hook);
     len = strlen(path) + i + 2;
@@ -182,13 +201,13 @@ execute_request(client *current_client, char* path)
             command[i] = '/';
 
     file_exists = file_exist(command);
-printf("command: %s\n", command);
+//printf("command: %s\n", command);
     
     if (file_exists){
     args[0] = command;
     args[1] = json_object_get_string(payload);
     args[2] = NULL;
-printf("args set\n");
+//printf("args set\n");
     options.exit_cb = child_exit;
     options.file = args[0];
     options.args = args;
@@ -200,7 +219,7 @@ printf("args set\n");
     child_stdio[2].flags = UV_CREATE_PIPE | UV_WRITABLE_PIPE;
     child_stdio[2].data.stream = (uv_stream_t*) &current_client->err_pipe;
     options.stdio = child_stdio;
-printf("options set \n");
+//printf("options set \n");
 
     ret = uv_spawn(loop, &current_client->child_req, options); //printf("spawning child process, ret = %d\n", ret);
     }
@@ -218,7 +237,7 @@ printf("options set \n");
         uv_read_start((uv_stream_t*) &current_client->err_pipe, alloc_buffer, read_err);
     }
 
-    free(command); printf("End of execute request function. \n");
+    free(command); //printf("End of execute request function. \n");
 }
 
 /*
@@ -266,7 +285,6 @@ send_reply (client *current_client, char *reply_txt, int reply_size)
     free(data_write);
 }
 
-
 /*
  * 
  */
@@ -297,8 +315,8 @@ on_write (uv_write_t *req, int status)
  */
 void 
 on_read(uv_stream_t *client_conn, ssize_t nread, uv_buf_t buf)
-{printf("on read, nread: %d\n", nread);
-    if (nread == -1) { printf("nread: %d\n", nread);
+{printf("on read, nread: %d\n", (int) nread);
+    if (nread == -1) { printf("nread: %d\n", (int) nread);
         if (nread == UV_EOF)
             fprintf(stderr, "Read error: EOF.\n");
         uv_close((uv_handle_t*) client_conn, NULL);
@@ -354,8 +372,20 @@ signal_cb (uv_signal_t *sig_event, int signum)
     raise(SIGTERM);
 }
 
+/*
+ * 
+ */
+bool 
+file_exist(char file_path[])
+{
+    if (access(file_path, F_OK) != -1)
+        return(true);
+    else
+        return(false);
+}
+
 void 
-client_dc(/*struct bufferevent *buffer_event,*/ void *ctx)          // TODO:    adapt to libuv 
+client_dc(void *ctx)          // TODO:    adapt to libuv 
 { 
     if (ctx == NULL){
         fprintf(stderr,"Fatal error: Null list passed to client_dc()");
@@ -388,50 +418,4 @@ client_dc(/*struct bufferevent *buffer_event,*/ void *ctx)          // TODO:    
 //            }
 //        }
 //    }
-}
-
-/* 
- * triggered by all event buffer event, reports errors and successful connects. 
- */
-void 
-event_cb(/*struct bufferevent *buffer_event,*/ short what, void *ctx)               // TODO: eliminate or adapt to libuv
-{ 
-    if (what /*& BEV_EVENT_ERROR*/) {
-        unsigned long err;
-
-//       while ((err = (bufferevent_get_openssl_error(buffer_event)))) { 
-//            const char *msg = (const char*)
-//                ERR_reason_error_string(err);
-//            const char *lib = (const char*)
-//                ERR_lib_error_string(err);
-//            const char *func = (const char*)
-//                ERR_func_error_string(err);
-//            fprintf(stderr,
-//                "%s in %s %s\n", msg, lib, func);
-//        }
-
-        if (errno)
-            perror("connection error");
-    }
-
-//    if (what & BEV_EVENT_EOF)
-//        client_dc(buffer_event, ctx);
-
-//    if (what & BEV_EVENT_CONNECTED)
-//        printf("CONNECTION SUCCESSFUL\n");
-
-//    if (what & BEV_EVENT_TIMEOUT)
-//        printf("TIMEOUT\n");
-}
-
-/*
- * 
- */
-bool 
-file_exist(char file_path[])
-{
-    if (access(file_path, F_OK) != -1)
-        return(true);
-    else
-        return(false);
 }

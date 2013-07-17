@@ -215,3 +215,23 @@ print_client_list(client_list *list_to_print)
         print_client_node(list_to_print->head);
     }
 }
+
+/*
+ *
+ */
+client* 
+find_client_from_pipe(uv_stream_t *info_pipe)
+{
+    client_node         *curr_node = clients->head;
+    client              *curr_client = NULL;
+
+    while (curr_node != NULL){
+        curr_client = curr_node->client_data;
+        if (&curr_client->out_pipe == (uv_pipe_t *) info_pipe || &curr_client->err_pipe == (uv_pipe_t *) info_pipe)
+            curr_node = NULL;
+        else
+            curr_node = curr_node->next;
+    }
+
+    return(curr_client);
+}
