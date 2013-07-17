@@ -111,7 +111,9 @@ process* free_process(process* old_process);
 void print_client(client *client_to_print);
 void print_client_node(client_node *node_to_print);
 void print_client_list(client_list *list_to_print);
-client* find_client_from_pipe(uv_stream_t *info_pipe);
+bool client_owns_process(client input_client, process *input_process);
+client* find_client_from_process(process *input_process);
+process* find_process_from_pipe(uv_stream_t *info_pipe);
 client* find_client_from_connection(uv_stream_t *client_conn);
 
 #endif 

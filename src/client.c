@@ -263,6 +263,7 @@ print_client(client *client_to_print)
     else {
         printf("Client \n");
         printf("client_connection: %p\n", client_to_print->client_connection);
+        printf("processes: %p\n", client_to_print->processes);
         printf("data_len: %d\n", client_to_print->data_length);
         printf("data: ");
         int i;
@@ -304,10 +305,45 @@ print_client_list(client_list *list_to_print)
     }
 }
 
+bool
+client_owns_process(client input_client, process *input_process)
+{
+    process_node            *curr_node = client.processes;
+
+    while (curr_node != NULL){
+        if (curr_node->process_data == input_process)
+            return (true);
+        else 
+            curr_node = curr_node->next;
+    }
+
+    return (false);
+}
+
+client*
+find_client_from_process(process *input_process)
+{
+    client_node         *curr_node = clients->head;
+    client              *curr_client = NULL;
+
+    while (curr_node != NULL){
+        curr_client = curr_node->client_data;
+        if (client_owns_process(curr_client, input_process)){
+            curr_node = NULL;
+        }
+        else {
+            curr_node = curr_node->next;
+            curr_client = NULL;
+        }
+    }
+
+    return (curr_client);
+}
+
 /*
  *
  */
-client* 
+process* 
 find_process_from_pipe(uv_stream_t *info_pipe)
 {
     client_node         *curr_node = clients->head;
@@ -331,7 +367,7 @@ find_process_from_pipe(uv_stream_t *info_pipe)
                     curr_process = NULL;
                 }
             } 
-            
+
             if (curr_node != NULL)
                 curr_node = curr_node->next;
         } 
@@ -354,10 +390,13 @@ find_client_from_connection(uv_stream_t *client_conn)
 
     while (curr_node != NULL){
         curr_client = curr_node->client_data;
-        if (curr_client->client_connection == (uv_tcp_t *) client_conn)
+        if (curr_client->client_connection == (uv_tcp_t *) client_conn){
             curr_node = NULL;
-        else
+        }
+        else {
             curr_node = curr_node->next;
+            curr_client = NULL;
+        }
     }
     return (curr_client);
 }
