@@ -56,33 +56,46 @@
 
  // structures 
 
+typedef struct process{
+    char                    *process_call, *out_output, *err_output;
+    uv_process_t            *child_req;
+    uv_pipe_t               out_pipe, err_pipe;
+    unsigned int            out_len, err_len, out_position, err_position;
+    int                     exit_code;
+} process;
+
+ typedef struct process_node {
+    process         *process_data;
+    process_node    *next;
+} process_node;
+
  typedef struct client{
     uv_tcp_t 				*client_connection;
-    unsigned int            data_length, out_len, err_len;
-    char                    *data, *out_output, *err_output;
-    unsigned int            data_position, out_position, err_position;
-    uv_pipe_t 				out_pipe, err_pipe;
-    int 					exit_code;
-    uv_process_t 			child_req;
-    bool                    process_running;
- } client;
+    unsigned int            data_length;
+    unsigned int            data_position;
+    char                    *data;
+    process_node            *processes;
+} client;
 
  typedef struct client_node{
     client              *client_data;
     struct client_node  *next;
- } client_node;
+} client_node;
 
  typedef struct client_list{
     client_node     *head;
     char 			*base_path;
     uv_tcp_t        listener;
- } client_list;
+} client_list;
 
  extern client_list 	*clients;
  extern uv_loop_t       *loop;
 
 // functions
 
+process* new_null_process();
+process_node* new_process_node(process* input_process, process_node* input_node);
+process_node* new_null_process_node();
 client* new_client(uv_tcp_t *input_connection, char *input_data);
 client* new_null_client();
 client_list* new_client_list(client_node *input_node, char *path);
@@ -92,6 +105,9 @@ client_node* new_null_client_node();
 client* free_client(client *old_client);
 client_list* free_client_list(client_list *old_list);
 client_node* free_client_node(client_node *old_node);
+process_node* free_process_nodes(process_node *old_node);
+process_node* free_one_process_node(process_node *old_node);
+process* free_process(process* old_process);
 void print_client(client *client_to_print);
 void print_client_node(client_node *node_to_print);
 void print_client_list(client_list *list_to_print);

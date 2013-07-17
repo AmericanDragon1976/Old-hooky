@@ -27,6 +27,50 @@
 #include "callback.h"
 
 /*
+ * 
+ */
+process* 
+new_null_process()
+{
+    process         *new_process = (process *) malloc(sizeof(process));
+
+    new_process->process_call = NULL;
+    new_process->child_req = NULL;
+    new_process->out_output = (char *) malloc(data_size);
+    new_process->out_output[0] = '\0';
+    new_process->err_output = (char *) malloc(data_size);
+    new_process->err_output[0] = '\0';
+    new_process->out_len = data_size;
+    new_process->err_len = data_size;
+    new_process->out_position = 0;
+    new_process->err_position = 0;
+    new_process->exit_code = 0;
+}
+
+/*
+ * 
+ */
+process_node* 
+new_process_node(process* input_process, process_node* input_node)
+{
+    process_node        *new_node = (process_node *) malloc(sizeof(process_node));
+
+    new_node->process_data = input_process;
+    new_node->next = input_node;
+
+    return(new_node);
+}
+
+/*
+ * 
+ */
+process_node* 
+new_null_process_node()
+{
+    return(new_process_node(NULL, NULL))
+}
+
+/*
  * Allocates memory for a new client sets pointer members to values passes in, and set other values to 0.
  */
 client* 
@@ -38,15 +82,6 @@ new_client(uv_tcp_t *input_connection, char *input_data)
     new_client->data_length = 0;
     new_client->data = input_data;
     new_client->data_position = 0;
-    new_client->out_len = data_size;
-    new_client->out_output = (char *) malloc(new_client->out_len);
-    new_client->out_position = 0;
-    new_client->out_output[0] = '\0';
-    new_client->err_len = data_size;
-    new_client->err_output = (char *) malloc(new_client->err_len);
-    new_client->err_position = 0;
-    new_client->err_output[0] = '\0';
-    new_client->process_running = false;
 
     return(new_client);
 }
@@ -120,8 +155,7 @@ free_client(client *old_client)
     uv_close((uv_handle_t*) old_client->client_connection, NULL);
     free(old_client->client_connection);
     free(old_client->data);
-    free(old_client->out_output);
-    free(old_client->err_output);
+    free_process_nodes(old_client->processes);
     free(old_client);
     old_client = NULL;
     return(old_client);
@@ -167,6 +201,59 @@ free_client_node(client_node *old_node)
 /*
  * 
  */
+process_node* 
+free_process_nodes(process_node *old_node)
+{
+    if (old_node == NULL)
+        return(old_node);
+
+    free_process(old_node->process_data);
+    free_process_node(old_node->next);
+
+    free(old_node);
+    old_node = NULL;
+    return(old_node);
+}
+
+/*
+ * Frees the node passed in and returns "next" link;
+ */
+process_node* 
+free_one_process_node(process_node *old_node)
+{
+    if (old_node == NULL)
+        return(old_node);
+
+    process_node        *temp_node = old_node->next;
+
+    free_process(old_node->process_data);
+    free(old_node);
+    old_node = NULL;
+
+    return(temp_node);
+
+}
+
+/*
+ * 
+ */
+process* 
+free_process(process* old_process)
+{
+    if (old_process == NULL)
+        return (old_process); 
+
+    free(old_process->process_call);
+    free(old_process->out_output);
+    free(old_process->err_process);
+    free(old_process);
+    old_process = NULL;
+    return(NULL);
+}
+
+/*
+ * 
+ */
 void 
 print_client(client *client_to_print)
 {
@@ -175,7 +262,7 @@ print_client(client *client_to_print)
     }
     else {
         printf("Client \n");
-        printf("client_connection: %p\n",client_to_print->client_connection);
+        printf("client_connection: %p\n", client_to_print->client_connection);
         printf("data_len: %d\n", client_to_print->data_length);
         printf("data: ");
         int i;
@@ -221,20 +308,39 @@ print_client_list(client_list *list_to_print)
  *
  */
 client* 
-find_client_from_pipe(uv_stream_t *info_pipe)
+find_process_from_pipe(uv_stream_t *info_pipe)
 {
     client_node         *curr_node = clients->head;
     client              *curr_client = NULL;
+    process_node        *curr_process_node = NULL;
+    process             *curr_process = NULL;
 
     while (curr_node != NULL){
         curr_client = curr_node->client_data;
-        if (&curr_client->out_pipe == (uv_pipe_t *) info_pipe || &curr_client->err_pipe == (uv_pipe_t *) info_pipe)
-            curr_node = NULL;
-        else
+        if (curr_client != NULL){
+            curr_process_node = curr_client->processes;
+
+            while (current_process_node != NULL)
+                curr_process = curr_process_node->process_data;
+                if(curr_process->out_pipe == (uv_pipe_t *) info_pipe || curr_process->err_pipe == (uv_pipe_t *) info_pipe){
+                    curr_node = NULL;
+                    curr_process_node = NULL;
+                }
+                else {
+                    curr_process_node = curr_process_node->next;
+                    curr_process = NULL;
+                }
+            } 
+            
+            if (curr_node != NULL)
+                curr_node = curr_node->next;
+        } 
+        else {
             curr_node = curr_node->next;
+        }
     }
 
-    return(curr_client);
+    return(curr_process);
 }
 
 /*
