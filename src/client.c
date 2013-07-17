@@ -46,6 +46,7 @@ new_client(uv_tcp_t *input_connection, char *input_data)
     new_client->err_output = (char *) malloc(new_client->err_len);
     new_client->err_position = 0;
     new_client->err_output[0] = '\0';
+    new_client->process_running = false;
 
     return(new_client);
 }
@@ -234,4 +235,23 @@ find_client_from_pipe(uv_stream_t *info_pipe)
     }
 
     return(curr_client);
+}
+
+/*
+ *
+ */
+client* 
+find_client_from_connection(uv_stream_t *client_conn)
+{
+    client_node         *curr_node = clients->head;
+    client              *curr_client = NULL;
+
+    while (curr_node != NULL){
+        curr_client = curr_node->client_data;
+        if (curr_client->client_connection == (uv_tcp_t *) client_conn)
+            curr_node = NULL;
+        else
+            curr_node = curr_node->next;
+    }
+    return (curr_client);
 }

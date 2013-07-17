@@ -26,12 +26,18 @@
 #include "hooky.h"
 #include "callback.h"
 
- uv_buf_t 
+ /*
+ * 
+ */
+uv_buf_t 
  alloc_buffer(uv_handle_t *handle, size_t suggested_size) 
 {printf("alloc buffer \n");
     return uv_buf_init((char*) malloc(suggested_size), suggested_size);             //FREE for this Malloc ?
 }
 
+/*
+ * 
+ */
 void 
 child_exit(uv_process_t *req, int exit_status, int term_signal)
 { printf("child exit called \n");
@@ -54,18 +60,22 @@ fprintf(stderr, "Process exited with status %d, signal %d\n", exit_status, term_
             temp_node = temp_node->next;
         }
         else {
-            temp_node = NULL; //printf("Client of child process found \n");
+            temp_node = NULL; 
         }
     }
-    temp_client->exit_code = exit_status; //printf("temp_client->exit_code: %d\n", temp_client->exit_code);
+    temp_client->exit_code = exit_status; 
     reply_txt = package_reply(temp_client, reply_len);
-    send_reply(temp_client, reply_txt, *reply_len); //printf("child exit ending \n");
+    send_reply(temp_client, reply_txt, *reply_len);
+    reset_client(current_client);
     free(reply_len);
     reply_len = NULL;
     uv_close((uv_handle_t *) &temp_client->child_req, NULL);
 
 }
 
+/*
+ * 
+ */
 void 
 read_out(uv_stream_t *out_pipe, ssize_t nread, uv_buf_t buf)
 {printf("read_out\n");
@@ -82,6 +92,9 @@ read_out(uv_stream_t *out_pipe, ssize_t nread, uv_buf_t buf)
         current_client->out_output[current_client->out_position++] = buf.base[i];
 }
 
+/*
+ * 
+ */
 void 
 read_err(uv_stream_t *err_pipe, ssize_t nread, uv_buf_t buf)
 {printf("read_err\n");
@@ -112,7 +125,7 @@ on_connect(uv_stream_t *listener, int status)
     client              *connecting_client = new_null_client();
     uv_tcp_init(loop, connecting_client->client_connection);
 
-    if (uv_accept(listener, (uv_stream_t*) connecting_client->client_connection) == 0) { //printf("client accepted \n");
+    if (uv_accept(listener, (uv_stream_t*) connecting_client->client_connection) == 0) {
         uv_read_start((uv_stream_t*) connecting_client->client_connection, alloc_buffer, on_read); 
         client_node         *temp_node = new_client_node(connecting_client, clients->head);
         clients->head = temp_node;
@@ -132,33 +145,24 @@ on_connect(uv_stream_t *listener, int status)
 void 
 process_data_from_client(client *current_client, ssize_t nread, uv_buf_t buf)
 {printf("processing: %d\n", (int) buf.base); 
-    bool            new_request; 
-    int             i = 0, j = 0, size = 0; 
-    int             *int_ptr; 
+    int             i = 0, j = 0, size = 0, *int_ptr; 
     char            str_size[4], temp_char_num[4], *data_recived = buf.base; 
-//printf("nread %d\n", nread);
+
     int_ptr = (int *) &temp_char_num;
     *int_ptr = 0;
-//printf("DL: %d\n", current_client->data_length);
-    if (current_client->data_length == 0)
-        new_request = true;
-    else 
-        new_request = false;
 
-    if (new_request){ //printf("process data, for loops i,j = \n");
+    if (current_client->data_length == 0){ 
         j = 0;
-        for (i = 3; i >= 0; i--){ //printf(" %d,%d", i, j);
+        for (i = 3; i >= 0; i--)
             str_size[i] = data_recived[j++];
-        }
 
-        i = 0;//printf("\nsecond loop i,j ");
         for (i = 0; i < 4; i++){ 
             temp_char_num[0] = str_size[i];
             size = size * 256 + (*int_ptr); 
-            *int_ptr = 0; //printf(" %d,%d", i, j);
-        } //printf("\nSize: %d\n", size);
+            *int_ptr = 0;
+        }
 
-        current_client->data_length = size; //printf("after assign DL: %d\n", current_client->data_length);
+        current_client->data_length = size;
         current_client->data = (char *) malloc(size + 1);
         i = 4;
     }
@@ -169,8 +173,34 @@ process_data_from_client(client *current_client, ssize_t nread, uv_buf_t buf)
     for ( ; j < size && i < nread; )
         current_client->data[j++] = data_recived[i++];
 
-    current_client->data_position = j; //printf("process data, before free() \n");
-    free(data_recived); //printf("process data, after free() \n");
+    current_client->data_position = j;
+    free(data_recived); 
+}
+
+/*
+ * 
+ */
+char*
+assemble_command(char *path, char *data)
+{
+    char                *command = NULL;
+    int                 i, len;
+    json_object         *jobj = json_tokener_parse(data);
+    json_object         *hook = json_object_object_get(jobj, "hook");
+
+    i = json_object_get_string_len(hook);
+    len = strlen(path) + i + 2;
+    command = (char *) malloc(len); 
+    strcpy(command, path);
+    strncat(command, json_object_get_string(hook), i);
+
+    for (i = 0; i < len; i++)
+        if (command[i] == '.')
+            command[i] = '/';
+
+    json_object_put(jobj);
+    json_object_put(hook);
+    return (command);
 }
 
 /*
@@ -180,34 +210,22 @@ void
 execute_request(client *current_client, char* path)  
 { printf("execute hook \n");
     uv_stdio_container_t    child_stdio[3];
-    int                     exit_code, len, i, ret;
-    char                    *command = NULL, *args[3];
-    char                    *reply;
+    int                     len, ret;
+    char                    *command = NULL, *args[3], *reply;;
     bool                    file_exists;
     json_object             *jobj = json_tokener_parse(current_client->data);
-    json_object             *hook = json_object_object_get(jobj, "hook");
     json_object             *payload = json_object_object_get(jobj, "payload");
     uv_process_options_t    options = {0};
     
 // TODO: add validation to prevent malformed requests from crashing the program.
-    i = json_object_get_string_len(hook);
-    len = strlen(path) + i + 2;
-    command = (char *) malloc(len); //printf("path: %s\n", path); printf("command %s\n", command);
-    strcpy(command, path); //printf("hook: %s\n", json_object_get_string(hook)); printf("command %s\n", command);
-    strncat(command, json_object_get_string(hook), i); //printf("payload: %s\n", json_object_get_string(payload));
-//printf("command %s\n", command);
-    for (i = 0; i < len; i++)
-        if (command[i] == '.')
-            command[i] = '/';
-
+    command = assemble_command(path, current_client->data);
     file_exists = file_exist(command);
-//printf("command: %s\n", command);
-    
+
     if (file_exists){
     args[0] = command;
     args[1] = json_object_get_string(payload);
     args[2] = NULL;
-//printf("args set\n");
+
     options.exit_cb = child_exit;
     options.file = args[0];
     options.args = args;
@@ -219,7 +237,6 @@ execute_request(client *current_client, char* path)
     child_stdio[2].flags = UV_CREATE_PIPE | UV_WRITABLE_PIPE;
     child_stdio[2].data.stream = (uv_stream_t*) &current_client->err_pipe;
     options.stdio = child_stdio;
-//printf("options set \n");
 
     ret = uv_spawn(loop, &current_client->child_req, options); //printf("spawning child process, ret = %d\n", ret);
     }
@@ -231,13 +248,17 @@ execute_request(client *current_client, char* path)
         strncpy(current_client->err_output, "", current_client->err_len);
         reply = package_reply(current_client, &len);
         send_reply(current_client, reply, len);
+        reset_client(current_client);
     }
     else {
         uv_read_start((uv_stream_t*) &current_client->out_pipe, alloc_buffer, read_out);
         uv_read_start((uv_stream_t*) &current_client->err_pipe, alloc_buffer, read_err);
+        current_client->process_running = true;
     }
 
-    free(command); //printf("End of execute request function. \n");
+    free(command); 
+    json_object_put(jobj);
+    json_object_put(payload);
 }
 
 /*
@@ -250,18 +271,25 @@ package_reply(client *current_client, int *len)
     struct json_object          *reply_json_object = json_object_new_object();
     struct json_object          *temp_int_json_object = json_object_new_int64(current_client->exit_code);
     struct json_object          *temp_string_json_object = json_object_new_string(current_client->out_output);
-//printf("ONE \n");
-    json_object_object_add  (reply_json_object, "exit_code", temp_int_json_object);//printf("TWO \n");
-    json_object_object_add  (reply_json_object, "stdout", temp_string_json_object);//printf("THREE \n");
-    temp_string_json_object = json_object_new_string(current_client->err_output);//printf("FOUR \n");                   // FREE?????
-    json_object_object_add  (reply_json_object, "stderr", temp_string_json_object);//printf("FIVE \n");
-//printf("SIX \n");
-    reply = json_object_to_json_string(reply_json_object);//printf("SEVEN reply %s\n", reply); printf("len %d\n", json_object_get_string_len(reply_json_object));
-    for (*len = 0; reply[++(*len)] != '}';);
-printf("reply: %s len: %d\n", reply, *len);
+
+    json_object_object_add  (reply_json_object, "exit_code", temp_int_json_object);
+    json_object_object_add  (reply_json_object, "stdout", temp_string_json_object);
+    json_object_put(temp_string_json_object);
+    temp_string_json_object = json_object_new_string(current_client->err_output);                 
+    json_object_object_add  (reply_json_object, "stderr", temp_string_json_object);
+
+    reply = json_object_to_json_string(reply_json_object);//printf("reply %s\n", reply); printf("len %d\n", json_object_get_string_len(reply_json_object));
+    json_object_put(reply_json_object);
+    json_object_put(temp_int_json_object);
+    json_object_put(temp_string_json_object);
+//    for (*len = 0; reply[++(*len)] != '}';);
+//printf("reply: %s len: %d\n", reply, *len);
     return(reply);
 }
 
+/*
+ * 
+ */
 void 
 send_reply (client *current_client, char *reply_txt, int reply_size)
 { printf("send reply \n");
@@ -280,7 +308,6 @@ send_reply (client *current_client, char *reply_txt, int reply_size)
     data_write_buff.base = reply_txt;
     uv_write(data_len_write, (uv_stream_t*) current_client->client_connection, &data_len_buff, 1, on_write);
     uv_write(data_write, (uv_stream_t*) current_client->client_connection, &data_write_buff, 1, on_write);
-    reset_client(current_client);
     free(data_len_write);
     free(data_write);
 }
@@ -298,9 +325,10 @@ reset_client(client *current_client)
     current_client->out_position = 0;
     current_client->err_position = 0;
     free(current_client->data);
-    current_client->data = NULL; //printf("about to realloc \n");
+    current_client->data = NULL;
     current_client->out_output = realloc(current_client->out_output, data_size);
-    current_client->err_output = realloc(current_client->err_output, data_size); //printf("function end \n");
+    current_client->err_output = realloc(current_client->err_output, data_size); 
+    current_client->process_running = false;
 }
 
 void
@@ -316,42 +344,18 @@ on_write (uv_write_t *req, int status)
 void 
 on_read(uv_stream_t *client_conn, ssize_t nread, uv_buf_t buf)
 {printf("on read, nread: %d\n", (int) nread);
-    if (nread == -1) { printf("nread: %d\n", (int) nread);
+    if (nread == -1) { printf("nread: %d\n", (int) nread);          // TODO: verify detect client dc is working and fix if not
         if (nread == UV_EOF)
             fprintf(stderr, "Read error: EOF.\n");
         uv_close((uv_handle_t*) client_conn, NULL);
         return;
     }
 
-    client_node     *current_node = clients->head;
     client          *current_client = NULL;
-    int             request_exit_code, reply_size;
-    char            *reply_txt = NULL;
-    uv_write_t      *data_len_write = NULL;
-    uv_write_t      *data_write = NULL;
-    uv_buf_t        data_len_buff;
-    uv_buf_t        data_write_buff;
+    current_client = find_client_from_connection(client_conn);
 
-    while (current_node != NULL){
-        if (current_node->client_data != NULL){
-            current_client = current_node->client_data;
-
-            if (current_client == NULL || current_client->client_connection != (uv_tcp_t *)client_conn){
-                current_node = current_node->next; //printf("client found \n");
-            }
-            else {
-                //printf("client found \n");
-                current_node = NULL;
-            }
-        }
-    }
-
-//printf("Data recived: %s\n", buf.base);
- 
-    if (nread > 0)
+    if (nread > 0 && current_client->process_running == false)
         process_data_from_client(current_client, nread, buf);
-
-//printf("processed data: %s data pos: %d data len: %d\n", current_client->data, current_client->data_position, current_client->data_length);
 
     if(current_client->data_length == current_client->data_position && current_client->data_length != 0)
         execute_request(current_client, clients->base_path);
@@ -364,7 +368,6 @@ on_read(uv_stream_t *client_conn, ssize_t nread, uv_buf_t buf)
 void 
 signal_cb (uv_signal_t *sig_event, int signum) 
 {
-//    struct event_base   *base = (struct event_base *) user_data;
     struct timeval      delay = { 2, 0 };
 
     printf("Caught an interrupt signal; exiting cleanly.\n");
@@ -384,6 +387,9 @@ file_exist(char file_path[])
         return(false);
 }
 
+/*
+ * 
+ */
 void 
 client_dc(void *ctx)          // TODO:    adapt to libuv 
 { 
