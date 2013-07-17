@@ -35,3 +35,10 @@ void init_accept_clients(uv_loop_t *loop, uv_tcp_t *client_listener, char addres
 void init_signals(uv_signal_t *signal_event);
 
 #endif
+
+/*
+	TODO: Consider how to handle a process that hangs. Some processes could run for long time when they are functioning correctly. 
+		* -Kill all of a clients processes if the client disconnects? 
+		*  or try to make identifying they and reconnecting them to their currently running processes possiable, future version?
+		
+*/
