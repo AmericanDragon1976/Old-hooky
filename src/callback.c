@@ -44,32 +44,35 @@ child_exit(uv_process_t *req, int exit_status, int term_signal)
 fprintf(stderr, "Process exited with status %d, signal %d\n", exit_status, term_signal);
 
     client_node             *temp_node = clients->head;
-    client                  *temp_client = NULL;
+    client                  *curr_client = NULL;
+    process_node            *curr_process_node = NULL, *temp_process_node = NULL;
     uv_process_t            *temp_process_watcher = NULL;
     char                    *reply_txt = NULL;
     int                     *reply_len = (int *) malloc(sizeof(int));
 
-    while (temp_node != NULL){
-        temp_client = temp_node->client_data;
-        if (temp_client != NULL)
-            temp_process_watcher = &temp_client->child_req;
+    find_client_and_process_from_process_watcher(req, curr_client, curr_process_node);
 
-        if(temp_process_watcher != req){
-            temp_process_watcher = NULL;
-            temp_client = NULL;
-            temp_node = temp_node->next;
+    if (curr_client == NULL) {
+        fprintf(stderr, "ERROR: NO client found for returning process!!! \n");
+    } 
+    else {
+        curr_process_node->process_data->exit_code = exit_status; 
+        reply_txt = package_reply(curr_process_node->process_data, reply_len);
+        send_reply(curr_client, reply_txt, *reply_len);
+        free(reply_len);
+        reply_len = NULL;
+        uv_close((uv_handle_t *) &curr_process_node->process_data->child_req, NULL);
+        // DO I NEED TO CALL UV_CLOSE ON THE PIPES TOO??   
+
+        if (curr_client->processes == curr_process_node){
+            curr_client->processes = free_one_process_node(curr_process_node);
         }
         else {
-            temp_node = NULL; 
+            for( temp_process_node = curr_client->processes; temp_process_node->next != curr_process_node; temp_process_node = temp_process_node->next)
+                ;
+            temp_process_node->next = free_one_process_node(curr_process_node);
         }
     }
-    temp_client->exit_code = exit_status; 
-    reply_txt = package_reply(temp_client, reply_len);
-    send_reply(temp_client, reply_txt, *reply_len);
-    reset_client(current_client);
-    free(reply_len);
-    reply_len = NULL;
-    uv_close((uv_handle_t *) &temp_client->child_req, NULL);
 
 }
 
@@ -81,15 +84,15 @@ read_out(uv_stream_t *out_pipe, ssize_t nread, uv_buf_t buf)
 {printf("read_out\n");
 
     int             buffer_size_increase = 0, i;
-    client          *current_client = find_client_from_pipe(out_pipe);
+    process         *current_process = find_process_from_pipe(out_pipe);
 
-    while (current_client->out_position + nread > current_client->out_len + buffer_size_increase)
+    while (current_process->out_position + nread > current_process->out_len + buffer_size_increase)
         buffer_size_increase += data_size;
 
-    current_client->out_output = realloc (current_client->out_output, current_client->out_len + buffer_size_increase);
+    current_process->out_output = realloc (current_process->out_output, current_process->out_len + buffer_size_increase);
 
     for (i = 0; i < nread; i++)
-        current_client->out_output[current_client->out_position++] = buf.base[i];
+        current_process->out_output[current_process->out_position++] = buf.base[i];
 }
 
 /*
@@ -100,15 +103,15 @@ read_err(uv_stream_t *err_pipe, ssize_t nread, uv_buf_t buf)
 {printf("read_err\n");
 
     int             buffer_size_increase = 0, i;
-    client          *current_client = find_client_from_pipe(err_pipe);
+    process         *current_process = find_process_from_pipe(err_pipe);
 
-    while (current_client->err_position + nread > current_client->err_len + buffer_size_increase)
+    while (current_process->err_position + nread > current_process->err_len + buffer_size_increase)
         buffer_size_increase += data_size;
 
-    current_client->err_output = realloc (current_client->err_output, current_client->err_len + buffer_size_increase);
+    current_process->err_output = realloc (current_process->err_output, current_process->err_len + buffer_size_increase);
 
     for (i = 0; i < nread; i++)
-        current_client->err_output[current_client->err_position++] = buf.base[i];
+        current_process->err_output[current_process->err_position++] = buf.base[i];
 }
 
 /*
@@ -129,10 +132,6 @@ on_connect(uv_stream_t *listener, int status)
         uv_read_start((uv_stream_t*) connecting_client->client_connection, alloc_buffer, on_read); 
         client_node         *temp_node = new_client_node(connecting_client, clients->head);
         clients->head = temp_node;
-        uv_pipe_init(loop, &connecting_client->err_pipe, 1);
-        uv_pipe_init(loop, &connecting_client->out_pipe, 1);
-        uv_pipe_open(&connecting_client->err_pipe, 0);
-        uv_pipe_open(&connecting_client->out_pipe, 1);
     }
     else {
         free_client(connecting_client);
@@ -181,11 +180,10 @@ process_data_from_client(client *current_client, ssize_t nread, uv_buf_t buf)
  * 
  */
 char*
-assemble_command(char *path, char *data)
+assemble_command(char *path, json_object *jobj)
 {
     char                *command = NULL;
     int                 i, len;
-    json_object         *jobj = json_tokener_parse(data);
     json_object         *hook = json_object_object_get(jobj, "hook");
 
     i = json_object_get_string_len(hook);
@@ -198,7 +196,6 @@ assemble_command(char *path, char *data)
         if (command[i] == '.')
             command[i] = '/';
 
-    json_object_put(jobj);
     json_object_put(hook);
     return (command);
 }
@@ -211,16 +208,26 @@ execute_request(client *current_client, char* path)
 { printf("execute hook \n");
     uv_stdio_container_t    child_stdio[3];
     int                     len, ret;
-    char                    *command = NULL, *args[3], *reply;;
+    char                    *command = NULL, *args[3], *reply;
     bool                    file_exists;
+    process_node            *temp_node;
     json_object             *jobj = json_tokener_parse(current_client->data);
     json_object             *payload = json_object_object_get(jobj, "payload");
     uv_process_options_t    options = {0};
     
 // TODO: add validation to prevent malformed requests from crashing the program.
-    command = assemble_command(path, current_client->data);
-    file_exists = file_exist(command);
+    temp_node = new_process_node(new_null_process(), NULL);
+    temp_node->process_data->process_call = current_client->data;
+    current_client->data = NULL;
+    uv_pipe_init(loop, &temp_node->process_data->err_pipe, 1);
+    uv_pipe_init(loop, &temp_node->process_data->out_pipe, 1);
+    uv_pipe_open(&temp_node->process_data->err_pipe, 0);
+    uv_pipe_open(&temp_node->process_data->out_pipe, 1);
 
+    reset_client(current_client);
+    command = assemble_command(path, jobj);
+
+    file_exists = file_exist(command);
     if (file_exists){
     args[0] = command;
     args[1] = json_object_get_string(payload);
@@ -233,27 +240,29 @@ execute_request(client *current_client, char* path)
     options.stdio_count = 3;
     child_stdio[0].flags = UV_IGNORE;
     child_stdio[1].flags = UV_CREATE_PIPE | UV_WRITABLE_PIPE;
-    child_stdio[1].data.stream = (uv_stream_t*) &current_client->out_pipe; 
+    child_stdio[1].data.stream = (uv_stream_t*) &temp_node->process_data->out_pipe; 
     child_stdio[2].flags = UV_CREATE_PIPE | UV_WRITABLE_PIPE;
-    child_stdio[2].data.stream = (uv_stream_t*) &current_client->err_pipe;
+    child_stdio[2].data.stream = (uv_stream_t*) &temp_node->process_data->err_pipe;
     options.stdio = child_stdio;
 
-    ret = uv_spawn(loop, &current_client->child_req, options); //printf("spawning child process, ret = %d\n", ret);
+
+    ret = uv_spawn(loop, &temp_node->process_data->child_req, options); 
     }
 
     if (!file_exists || ret != 0){
         fprintf(stderr, "%s\n", uv_strerror(ret));  
-        current_client->exit_code = 0;
-        strncpy(current_client->out_output, "", current_client->out_len);
-        strncpy(current_client->err_output, "", current_client->err_len);
-        reply = package_reply(current_client, &len);
+        temp_node->process_data->exit_code = 0;
+        strncpy(temp_node->process_data->out_output, "", temp_node->process_data->out_len);
+        strncpy(temp_node->process_data->err_output, "", temp_node->process_data->err_len);
+        reply = package_reply(temp_node->process_data, &len);
         send_reply(current_client, reply, len);
-        reset_client(current_client);
+        free_process_nodes(temp_node);
     }
     else {
-        uv_read_start((uv_stream_t*) &current_client->out_pipe, alloc_buffer, read_out);
-        uv_read_start((uv_stream_t*) &current_client->err_pipe, alloc_buffer, read_err);
-        current_client->process_running = true;
+        uv_read_start((uv_stream_t*) &temp_node->process_data->out_pipe, alloc_buffer, read_out);
+        uv_read_start((uv_stream_t*) &temp_node->process_data->err_pipe, alloc_buffer, read_err);
+        temp_node->next = current_client->processes;
+        current_client->processes = temp_node;
     }
 
     free(command); 
@@ -265,25 +274,29 @@ execute_request(client *current_client, char* path)
  * 
  */
 char* 
-package_reply(client *current_client, int *len)
+package_reply(process *current_process, int *len)    // TODO: add associated hook and payload data to reply
 {printf("package_reply \n");
     char                        *reply;
     struct json_object          *reply_json_object = json_object_new_object();
-    struct json_object          *temp_int_json_object = json_object_new_int64(current_client->exit_code);
-    struct json_object          *temp_string_json_object = json_object_new_string(current_client->out_output);
+    struct json_object          *temp_int_json_object = json_object_new_int64(current_process->exit_code);
+    struct json_object          *temp_string_json_object = json_object_new_string(current_process->out_output);
 
     json_object_object_add  (reply_json_object, "exit_code", temp_int_json_object);
     json_object_object_add  (reply_json_object, "stdout", temp_string_json_object);
     json_object_put(temp_string_json_object);
-    temp_string_json_object = json_object_new_string(current_client->err_output);                 
+    temp_string_json_object = json_object_new_string(current_process->err_output);                 
     json_object_object_add  (reply_json_object, "stderr", temp_string_json_object);
+    json_object_put(temp_string_json_object);
+    temp_string_json_object = json_object_new_string(current_process->process_call);
+    json_object_object_add (reply_json_object, "Hook", temp_string_json_object);
 
-    reply = json_object_to_json_string(reply_json_object);//printf("reply %s\n", reply); printf("len %d\n", json_object_get_string_len(reply_json_object));
+    reply = json_object_to_json_string(reply_json_object);
+    for (*len = 0; reply[++(*len)] != '}';);
+
     json_object_put(reply_json_object);
     json_object_put(temp_int_json_object);
     json_object_put(temp_string_json_object);
-//    for (*len = 0; reply[++(*len)] != '}';);
-//printf("reply: %s len: %d\n", reply, *len);
+
     return(reply);
 }
 
@@ -319,16 +332,9 @@ void
 reset_client(client *current_client)
 {printf("reset client\n");
     current_client->data_length = 0;
-    current_client->out_len = data_size;
-    current_client->err_len = data_size;
     current_client->data_position = 0;
-    current_client->out_position = 0;
-    current_client->err_position = 0;
     free(current_client->data);
     current_client->data = NULL;
-    current_client->out_output = realloc(current_client->out_output, data_size);
-    current_client->err_output = realloc(current_client->err_output, data_size); 
-    current_client->process_running = false;
 }
 
 void
@@ -354,7 +360,7 @@ on_read(uv_stream_t *client_conn, ssize_t nread, uv_buf_t buf)
     client          *current_client = NULL;
     current_client = find_client_from_connection(client_conn);
 
-    if (nread > 0 && current_client->process_running == false)
+    if (nread > 0)
         process_data_from_client(current_client, nread, buf);
 
     if(current_client->data_length == current_client->data_position && current_client->data_length != 0)

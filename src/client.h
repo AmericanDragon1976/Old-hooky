@@ -58,15 +58,15 @@
 
 typedef struct process{
     char                    *process_call, *out_output, *err_output;
-    uv_process_t            *child_req;
+    uv_process_t            child_req;
     uv_pipe_t               out_pipe, err_pipe;
     unsigned int            out_len, err_len, out_position, err_position;
     int                     exit_code;
 } process;
 
  typedef struct process_node {
-    process         *process_data;
-    process_node    *next;
+    process                 *process_data;
+    struct process_node     *next;
 } process_node;
 
  typedef struct client{
@@ -111,9 +111,10 @@ process* free_process(process* old_process);
 void print_client(client *client_to_print);
 void print_client_node(client_node *node_to_print);
 void print_client_list(client_list *list_to_print);
-bool client_owns_process(client input_client, process *input_process);
+bool client_owns_process(client *input_client, process *input_process);
 client* find_client_from_process(process *input_process);
 process* find_process_from_pipe(uv_stream_t *info_pipe);
 client* find_client_from_connection(uv_stream_t *client_conn);
+void find_client_and_process_from_process_watcher(uv_process_t *watcher, client *temp_client, process_node *temp_process_node);
 
 #endif 

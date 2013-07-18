@@ -34,7 +34,7 @@ void read_err(uv_stream_t *err_pipe, ssize_t nread, uv_buf_t buf);
 void on_connect(uv_stream_t *server, int status);
 void process_data_from_client(client *current_client, ssize_t nread, uv_buf_t buf);
 void execute_request(client *current_client, char *path);
-char* package_reply(client *current_client, int *len);
+char* package_reply(process *current_process, int *len);
 void send_reply (client *current_client, char *reply, int len);
 void reset_client(client *current_client);
 void on_write (uv_write_t *req, int status);

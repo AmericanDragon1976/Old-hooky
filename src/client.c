@@ -35,7 +35,6 @@ new_null_process()
     process         *new_process = (process *) malloc(sizeof(process));
 
     new_process->process_call = NULL;
-    new_process->child_req = NULL;
     new_process->out_output = (char *) malloc(data_size);
     new_process->out_output[0] = '\0';
     new_process->err_output = (char *) malloc(data_size);
@@ -67,7 +66,7 @@ new_process_node(process* input_process, process_node* input_node)
 process_node* 
 new_null_process_node()
 {
-    return(new_process_node(NULL, NULL))
+    return(new_process_node(NULL, NULL));
 }
 
 /*
@@ -208,7 +207,7 @@ free_process_nodes(process_node *old_node)
         return(old_node);
 
     free_process(old_node->process_data);
-    free_process_node(old_node->next);
+    free_process_nodes(old_node->next);
 
     free(old_node);
     old_node = NULL;
@@ -245,7 +244,7 @@ free_process(process* old_process)
 
     free(old_process->process_call);
     free(old_process->out_output);
-    free(old_process->err_process);
+    free(old_process->err_output);
     free(old_process);
     old_process = NULL;
     return(NULL);
@@ -306,9 +305,9 @@ print_client_list(client_list *list_to_print)
 }
 
 bool
-client_owns_process(client input_client, process *input_process)
+client_owns_process(client *input_client, process *input_process)
 {
-    process_node            *curr_node = client.processes;
+    process_node            *curr_node = input_client->processes;
 
     while (curr_node != NULL){
         if (curr_node->process_data == input_process)
@@ -356,9 +355,9 @@ find_process_from_pipe(uv_stream_t *info_pipe)
         if (curr_client != NULL){
             curr_process_node = curr_client->processes;
 
-            while (current_process_node != NULL)
+            while (curr_process_node != NULL){
                 curr_process = curr_process_node->process_data;
-                if(curr_process->out_pipe == (uv_pipe_t *) info_pipe || curr_process->err_pipe == (uv_pipe_t *) info_pipe){
+                if(curr_process != NULL && (&curr_process->out_pipe == (uv_pipe_t *) info_pipe || &curr_process->err_pipe == (uv_pipe_t *) info_pipe)){
                     curr_node = NULL;
                     curr_process_node = NULL;
                 }
@@ -399,4 +398,32 @@ find_client_from_connection(uv_stream_t *client_conn)
         }
     }
     return (curr_client);
+}
+
+void 
+find_client_and_process_from_process_watcher(uv_process_t *watcher, client *temp_client, process_node *temp_process_node)
+{
+    client_node         *curr_client_node = clients->head;
+    process             *temp_process = NULL;
+
+    temp_client = NULL;
+    temp_process_node = NULL;
+
+    while (curr_client_node != NULL){
+        temp_client = curr_client_node->client_data;
+
+        if (temp_client != NULL)
+            temp_process_node = temp_client->processes;
+
+        while (temp_process_node != NULL){
+            temp_process = temp_process_node->process_data;
+
+            if (temp_process != NULL && watcher == &temp_process->child_req)
+                return;
+            else 
+                temp_process_node = temp_process_node->next;
+        }
+        temp_client = NULL;
+        curr_client_node = curr_client_node->next;
+    }
 }
