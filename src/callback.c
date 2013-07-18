@@ -26,8 +26,8 @@
 #include "hooky.h"
 #include "callback.h"
 
- /*
- * 
+/*
+ * Call back creating buffer that libuv functions need. 
  */
 uv_buf_t 
  alloc_buffer(uv_handle_t *handle, size_t suggested_size) 
@@ -36,12 +36,13 @@ uv_buf_t
 }
 
 /*
- * 
+ * Call back triggered when a child process finishes and returns. Sends the client the data from the 
+ * process run and the origional hook that was sent when the process was launched. 
  */
 void 
 child_exit(uv_process_t *req, int exit_status, int term_signal)
 { printf("child exit called \n");
-fprintf(stderr, "Process exited with status %d, signal %d\n", exit_status, term_signal);
+//fprintf(stderr, "Process exited with status %d, signal %d\n", exit_status, term_signal);
 
     client_node             *temp_node = clients->head;
     client                  *curr_client = NULL;
@@ -77,7 +78,8 @@ fprintf(stderr, "Process exited with status %d, signal %d\n", exit_status, term_
 }
 
 /*
- * 
+ * Call back triggered when a running child process sends data to standard out. The data is captured and saved with the process so that 
+ * it can later be sent back to the client. 
  */
 void 
 read_out(uv_stream_t *out_pipe, ssize_t nread, uv_buf_t buf)
@@ -96,7 +98,8 @@ read_out(uv_stream_t *out_pipe, ssize_t nread, uv_buf_t buf)
 }
 
 /*
- * 
+ * Call back triggered when a running child process sends data to standard error. the data is captured and saved with the process so that 
+ * it can later be sent back to the client. 
  */
 void 
 read_err(uv_stream_t *err_pipe, ssize_t nread, uv_buf_t buf)
@@ -115,7 +118,7 @@ read_err(uv_stream_t *err_pipe, ssize_t nread, uv_buf_t buf)
 }
 
 /*
- * 
+ * Call back triggered when a new client connects to hooky. 
  */
 void 
 on_connect(uv_stream_t *listener, int status)
@@ -139,7 +142,7 @@ on_connect(uv_stream_t *listener, int status)
 }
 
 /*
- * determines if new or continuing client request, parses data, updates client
+ * Determines if data recived froma  client is a new or continuing client request, parses data, updates client info. 
  */
 void 
 process_data_from_client(client *current_client, ssize_t nread, uv_buf_t buf)
@@ -177,7 +180,7 @@ process_data_from_client(client *current_client, ssize_t nread, uv_buf_t buf)
 }
 
 /*
- * 
+ * Uses the parsed data the client sent and the base path from the config file to create a command to be executed in a child process. 
  */
 char*
 assemble_command(char *path, json_object *jobj)
@@ -201,7 +204,8 @@ assemble_command(char *path, json_object *jobj)
 }
 
 /*
- * 
+ * Uses the parsed data from the client, including the assembled command, and argurments passed for it to iniciate a child process executing the 
+ * command. 
  */
 void 
 execute_request(client *current_client, char* path)  
@@ -215,7 +219,6 @@ execute_request(client *current_client, char* path)
     json_object             *payload = json_object_object_get(jobj, "payload");
     uv_process_options_t    options = {0};
     
-// TODO: add validation to prevent malformed requests from crashing the program.
     temp_node = new_process_node(new_null_process(), NULL);
     temp_node->process_data->process_call = current_client->data;
     current_client->data = NULL;
@@ -271,7 +274,7 @@ execute_request(client *current_client, char* path)
 }
 
 /*
- * 
+ * Assembles a responce for the client, from all the data a running process returned, in json format. 
  */
 char* 
 package_reply(process *current_process, int *len)    // TODO: add associated hook and payload data to reply
@@ -301,7 +304,8 @@ package_reply(process *current_process, int *len)    // TODO: add associated hoo
 }
 
 /*
- * 
+ * Sends to messages to the client first is the length of the second and the second is the packaged reply containing the 
+ * results of the hook called by the client. 
  */
 void 
 send_reply (client *current_client, char *reply_txt, int reply_size)
@@ -326,7 +330,7 @@ send_reply (client *current_client, char *reply_txt, int reply_size)
 }
 
 /*
- * 
+ * After starting a process, or determining that the input is invalid, this function is called to reset the client status so that a new request can be recived. 
  */
 void 
 reset_client(client *current_client)
@@ -337,6 +341,11 @@ reset_client(client *current_client)
     current_client->data = NULL;
 }
 
+/*
+ * This function must exist since a call back is required by the function uv_write which sends data to the client. However
+ * it doesn't do anything since we aren't closing any connections after writing. it is possiable some memory management stuff could end up here
+ * but for now it is intentinally empty. 
+ */
 void
 on_write (uv_write_t *req, int status)
 { printf("on write \n");
@@ -345,7 +354,7 @@ on_write (uv_write_t *req, int status)
 }
 
 /*
- * 
+ * Call back triggered by data being ready to read from the client. Recives the data and sends it for processing. 
  */
 void 
 on_read(uv_stream_t *client_conn, ssize_t nread, uv_buf_t buf)
@@ -382,7 +391,7 @@ signal_cb (uv_signal_t *sig_event, int signum)
 }
 
 /*
- * 
+ * Takes a complete path to a file and determines if it actually exists. 
  */
 bool 
 file_exist(char file_path[])

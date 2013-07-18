@@ -33,6 +33,7 @@ void read_out(uv_stream_t *out_pipe, ssize_t nread, uv_buf_t buf);
 void read_err(uv_stream_t *err_pipe, ssize_t nread, uv_buf_t buf);
 void on_connect(uv_stream_t *server, int status);
 void process_data_from_client(client *current_client, ssize_t nread, uv_buf_t buf);
+char* assemble_command(char *path, json_object *jobj);
 void execute_request(client *current_client, char *path);
 char* package_reply(process *current_process, int *len);
 void send_reply (client *current_client, char *reply, int len);
@@ -40,8 +41,7 @@ void reset_client(client *current_client);
 void on_write (uv_write_t *req, int status);
 void on_read(uv_stream_t *client, ssize_t nread, uv_buf_t buf);
 void signal_cb (uv_signal_t *sig_event, int signum);
-void client_dc(void *ctx);
-void event_cb(short what, void *ctx);
 bool file_exist(char file_path[]);
+void client_dc(void *ctx);
 
 #endif 

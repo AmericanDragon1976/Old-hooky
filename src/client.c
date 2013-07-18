@@ -27,7 +27,8 @@
 #include "callback.h"
 
 /*
- * 
+ * Allocates memory for a new process, the process call is null and will simple be transfered from another source so there is no
+ * version of this function that creates a new buffer for it. 
  */
 process* 
 new_null_process()
@@ -47,7 +48,7 @@ new_null_process()
 }
 
 /*
- * 
+ * Allocated memory for a new process node and sets the pointers to the values passed in. 
  */
 process_node* 
 new_process_node(process* input_process, process_node* input_node)
@@ -61,7 +62,7 @@ new_process_node(process* input_process, process_node* input_node)
 }
 
 /*
- * 
+ * Calls new process node passing in NULL pointers. 
  */
 process_node* 
 new_null_process_node()
@@ -86,7 +87,7 @@ new_client(uv_tcp_t *input_connection, char *input_data)
 }
 
 /*
- * Calles new_client() passing in NULL pointers.
+ * Calls new_client() passing in NULL pointers.
  */
 client* 
 new_null_client()
@@ -198,7 +199,7 @@ free_client_node(client_node *old_node)
 }
 
 /*
- * 
+ * Frees the memmory associated with a process node passed in and recurses on all node down list from it. 
  */
 process_node* 
 free_process_nodes(process_node *old_node)
@@ -215,7 +216,7 @@ free_process_nodes(process_node *old_node)
 }
 
 /*
- * Frees the node passed in and returns "next" link;
+ * Frees the node passed in and returns its "next" link;
  */
 process_node* 
 free_one_process_node(process_node *old_node)
@@ -234,7 +235,7 @@ free_one_process_node(process_node *old_node)
 }
 
 /*
- * 
+ * Frees all memory associated with a process. 
  */
 process* 
 free_process(process* old_process)
@@ -251,7 +252,7 @@ free_process(process* old_process)
 }
 
 /*
- * 
+ * Prints all client data to standard out. Used in debugging, not use in production versions. 
  */
 void 
 print_client(client *client_to_print)
@@ -273,7 +274,7 @@ print_client(client *client_to_print)
 }
 
 /*
- * 
+ * Helper function to print client, prints a node. Used in debugging not used in production verdions. 
  */
 void 
 print_client_node(client_node *node_to_print)
@@ -290,7 +291,7 @@ print_client_node(client_node *node_to_print)
 }
 
 /*
- * 
+ * Prints all clients in the list to standard out. Used in debugging, not used in production versions. 
  */
 void 
 print_client_list(client_list *list_to_print)
@@ -304,6 +305,10 @@ print_client_list(client_list *list_to_print)
     }
 }
 
+/*
+ * Checks rether a particular process is owned by a particular client, ie it is in one of the nodes in it list of processes. 
+ * Returns true if it is owned and false if not. 
+ */
 bool
 client_owns_process(client *input_client, process *input_process)
 {
@@ -319,7 +324,10 @@ client_owns_process(client *input_client, process *input_process)
     return (false);
 }
 
-client*
+/*
+ * Takes a process and searchs the client list for the client that owns the process, returnes that client. 
+ */
+ client*
 find_client_from_process(process *input_process)
 {
     client_node         *curr_node = clients->head;
@@ -340,7 +348,8 @@ find_client_from_process(process *input_process)
 }
 
 /*
- *
+ * Takes a pipe connecting a child process to either standard out or standard error and searches the list of clients for the 
+ * process that is connected by that pipe and returns it. 
  */
 process* 
 find_process_from_pipe(uv_stream_t *info_pipe)
@@ -379,7 +388,7 @@ find_process_from_pipe(uv_stream_t *info_pipe)
 }
 
 /*
- *
+ * Takes a connection and finds the client in the list connected on that connection and returns it. 
  */
 client* 
 find_client_from_connection(uv_stream_t *client_conn)
@@ -400,7 +409,12 @@ find_client_from_connection(uv_stream_t *client_conn)
     return (curr_client);
 }
 
-void 
+/*
+ * Takes the uv proces, the watcher with the processes id, and searches the list of clients for the one who owns the process being
+ * watched. temp client will be set to that client and temp process will be set to that process. If it is not found in the list both 
+ * will be NYULL. 
+ */
+ void 
 find_client_and_process_from_process_watcher(uv_process_t *watcher, client *temp_client, process_node *temp_process_node)
 {
     client_node         *curr_client_node = clients->head;
