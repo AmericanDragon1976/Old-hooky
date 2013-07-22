@@ -37,14 +37,16 @@ new_null_process()
 
     new_process->process_call = NULL;
     new_process->out_output = (char *) malloc(data_size);
-    new_process->out_output[0] = '\0';
+    strncpy(new_process->out_output, "", data_size);
     new_process->err_output = (char *) malloc(data_size);
-    new_process->err_output[0] = '\0';
+    strncpy(new_process->err_output, "", data_size);
     new_process->out_len = data_size;
     new_process->err_len = data_size;
     new_process->out_position = 0;
     new_process->err_position = 0;
     new_process->exit_code = 0;
+
+    return (new_process);
 }
 
 /*
@@ -415,19 +417,21 @@ find_client_from_connection(uv_stream_t *client_conn)
  * will be NYULL. 
  */
  void 
-find_client_and_process_from_process_watcher(uv_process_t *watcher, client *temp_client, process_node *temp_process_node)
+find_client_and_process_from_process_watcher(uv_process_t *watcher, client **ptr_to_client, process_node **ptr_to_process_node)
 {
+    client              *temp_client = NULL;
+    process_node        *temp_process_node = NULL;
     client_node         *curr_client_node = clients->head;
     process             *temp_process = NULL;
 
-    temp_client = NULL;
-    temp_process_node = NULL;
-
-    while (curr_client_node != NULL){
+    while (curr_client_node != NULL){ 
         temp_client = curr_client_node->client_data;
+        *ptr_to_client = curr_client_node->client_data;
 
-        if (temp_client != NULL)
+        if (temp_client != NULL){
             temp_process_node = temp_client->processes;
+            *ptr_to_process_node = temp_client->processes;
+        }
 
         while (temp_process_node != NULL){
             temp_process = temp_process_node->process_data;

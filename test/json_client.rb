@@ -22,7 +22,7 @@ class Connection
     socket.print [message.bytes.count].pack('L') # 32-bit unsigned, native endian (uint32_t)
     socket.print message
     socket.flush
-    puts "message delivered"
+    puts "message delivered" 
   end
 
   def receive
@@ -54,7 +54,7 @@ port = '4000'
 connection = Connection.new host, port
 
 request = {
-  hook: 'bacon.configure',
+  hook: 'hooky.test.removedir',
   payload: 'lorem nibh, ut pharetra eros lacinia eget. Quisque id arcu nisl. Aliquam bibendum porta suscipit. Maecenas eu tortor'
 }
 

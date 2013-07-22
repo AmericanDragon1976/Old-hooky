@@ -51,7 +51,7 @@ child_exit(uv_process_t *req, int exit_status, int term_signal)
     char                    *reply_txt = NULL;
     int                     *reply_len = (int *) malloc(sizeof(int));
 
-    find_client_and_process_from_process_watcher(req, curr_client, curr_process_node);
+    find_client_and_process_from_process_watcher(req, &curr_client, &curr_process_node); 
 
     if (curr_client == NULL) {
         fprintf(stderr, "ERROR: NO client found for returning process!!! \n");
@@ -184,7 +184,7 @@ process_data_from_client(client *current_client, ssize_t nread, uv_buf_t buf)
  */
 char*
 assemble_command(char *path, json_object *jobj)
-{
+{printf("Assemble command \n");
     char                *command = NULL;
     int                 i, len;
     json_object         *hook = json_object_object_get(jobj, "hook");
@@ -222,6 +222,7 @@ execute_request(client *current_client, char* path)
     temp_node = new_process_node(new_null_process(), NULL);
     temp_node->process_data->process_call = current_client->data;
     current_client->data = NULL;
+printf("out: %s, err: %s, \n", temp_node->process_data->out_output, temp_node->process_data->err_output);
     uv_pipe_init(loop, &temp_node->process_data->err_pipe, 1);
     uv_pipe_init(loop, &temp_node->process_data->out_pipe, 1);
     uv_pipe_open(&temp_node->process_data->err_pipe, 0);
@@ -252,16 +253,19 @@ execute_request(client *current_client, char* path)
     ret = uv_spawn(loop, &temp_node->process_data->child_req, options); 
     }
 
-    if (!file_exists || ret != 0){
+    if (!file_exists || ret != 0){ printf ("file exist false or spawn error \n");
         fprintf(stderr, "%s\n", uv_strerror(ret));  
         temp_node->process_data->exit_code = 0;
-        strncpy(temp_node->process_data->out_output, "", temp_node->process_data->out_len);
-        strncpy(temp_node->process_data->err_output, "", temp_node->process_data->err_len);
+//        strncpy(temp_node->process_data->out_output, "", temp_node->process_data->out_len);
+//        strncpy(temp_node->process_data->err_output, "", temp_node->process_data->err_len);
+        temp_node->process_data->out_output[0] = '\0';
+        temp_node->process_data->err_output[0] = '\0';
+        printf("process to pack: out: %s, err: %s, hook: %s\n", temp_node->process_data->out_output, temp_node->process_data->err_output, temp_node->process_data->process_call);
         reply = package_reply(temp_node->process_data, &len);
         send_reply(current_client, reply, len);
         free_process_nodes(temp_node);
     }
-    else {
+    else {printf("file exist true, no spawn error \n");
         uv_read_start((uv_stream_t*) &temp_node->process_data->out_pipe, alloc_buffer, read_out);
         uv_read_start((uv_stream_t*) &temp_node->process_data->err_pipe, alloc_buffer, read_err);
         temp_node->next = current_client->processes;
@@ -284,22 +288,22 @@ package_reply(process *current_process, int *len)    // TODO: add associated hoo
     struct json_object          *temp_int_json_object = json_object_new_int64(current_process->exit_code);
     struct json_object          *temp_string_json_object = json_object_new_string(current_process->out_output);
 
-    json_object_object_add  (reply_json_object, "exit_code", temp_int_json_object);
-    json_object_object_add  (reply_json_object, "stdout", temp_string_json_object);
-    json_object_put(temp_string_json_object);
-    temp_string_json_object = json_object_new_string(current_process->err_output);                 
-    json_object_object_add  (reply_json_object, "stderr", temp_string_json_object);
-    json_object_put(temp_string_json_object);
-    temp_string_json_object = json_object_new_string(current_process->process_call);
-    json_object_object_add (reply_json_object, "Hook", temp_string_json_object);
+    json_object_object_add  (reply_json_object, "exit_code", temp_int_json_object);printf("stdout: %s\n", current_process->out_output);
+    json_object_object_add  (reply_json_object, "stdout", temp_string_json_object);  printf("put json obj \n");
+//    json_object_put(temp_string_json_object); printf("new string json obj\n");
+    temp_string_json_object = json_object_new_string(current_process->err_output); printf("stderr \n");
+    json_object_object_add  (reply_json_object, "stderr", temp_string_json_object); printf("put object again");
+//    json_object_put(temp_string_json_object); printf("new string json obj again \n");
+    temp_string_json_object = json_object_new_string(current_process->process_call); printf("Hook \n");
+    json_object_object_add (reply_json_object, "Hook", temp_string_json_object); printf("json to string \n");
 
-    reply = json_object_to_json_string(reply_json_object);
-    for (*len = 0; reply[++(*len)] != '}';);
+    reply = json_object_to_json_string(reply_json_object); printf("reply: %s\n find len of reply \n",reply);
+    *len = strlen(reply); printf("len: %d. putting all json objects \n", *len); 
 
-    json_object_put(reply_json_object);
-    json_object_put(temp_int_json_object);
-    json_object_put(temp_string_json_object);
-
+//    json_object_put(reply_json_object);
+//    json_object_put(temp_int_json_object);
+//    json_object_put(temp_string_json_object);
+printf("returning \n");
     return(reply);
 }
 
@@ -382,7 +386,7 @@ on_read(uv_stream_t *client_conn, ssize_t nread, uv_buf_t buf)
  */
 void 
 signal_cb (uv_signal_t *sig_event, int signum) 
-{
+{printf("signal_cb \n");
     struct timeval      delay = { 2, 0 };
 
     printf("Caught an interrupt signal; exiting cleanly.\n");
@@ -395,11 +399,11 @@ signal_cb (uv_signal_t *sig_event, int signum)
  */
 bool 
 file_exist(char file_path[])
-{
-    if (access(file_path, F_OK) != -1)
-        return(true);
-    else
-        return(false);
+{printf("file exist %s ", file_path);
+    if (access(file_path, F_OK) == 0) { printf ("true \n");
+        return(true);}
+    else { printf("false \n");
+        return(false);}
 }
 
 /*
