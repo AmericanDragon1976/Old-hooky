@@ -316,18 +316,16 @@ send_reply (client *current_client, char *reply_txt, int reply_size)
     uv_buf_t        data_write_buff;
 
     data_len_write = (uv_write_t *) malloc(sizeof(uv_write_t));
-    data_write = (uv_write_t *) malloc(sizeof(uv_write_t));
     data_len_write->data = (void*) &reply_size;
-    data_write->data = (void*) reply_txt;
     data_len_buff.len = 4;
     data_len_buff.base = (char *) &reply_size;
+    uv_write(data_len_write, (uv_stream_t*) current_client->client_connection, &data_len_buff, 1, on_write);
+
+    data_write = (uv_write_t *) malloc(sizeof(uv_write_t));
+    data_write->data = (void*) reply_txt;
     data_write_buff.len = reply_size;
     data_write_buff.base = reply_txt;
-    uv_write(data_len_write, (uv_stream_t*) current_client->client_connection, &data_len_buff, 1, on_write);
     uv_write(data_write, (uv_stream_t*) current_client->client_connection, &data_write_buff, 1, on_write);
-    free(data_len_write);
-    free(data_write);
-printf("test one \n");
 
 }
 
@@ -351,6 +349,9 @@ reset_client(client *current_client)
 void
 on_write (uv_write_t *req, int status)
 { printf("on write \n");
+
+    free(req);
+    req = NULL;
     // TODO: verify memory management with libuv and json-c lib
 
 }
