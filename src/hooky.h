@@ -39,6 +39,6 @@ void init_signals(uv_signal_t *signal_event);
 /*
 	TODO: Consider how to handle a process that hangs. Some processes could run for long time when they are functioning correctly. 
 		* -Kill all of a clients processes if the client disconnects? 
-		*  or try to make identifying they and reconnecting them to their currently running processes possiable, future version?
+		*  or try to make identifying them and reconnecting them to their currently running processes possiable, future version?
 		
 */

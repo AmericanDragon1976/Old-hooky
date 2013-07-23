@@ -31,7 +31,7 @@
 
 void 
 usage()
-{
+{ //printf("usage\n");
     printf("usage: ./hooky path/to/config/file\n");
     printf("example: \n ./hooky ../deps/config.txt\n");
     exit(0);
@@ -42,7 +42,7 @@ usage()
  */
 bool 
 verify_args(int num_args, char **argv)
-{
+{ //printf("verify args\n");
    if (num_args < 2)
        return (false);
    else
@@ -56,7 +56,7 @@ verify_args(int num_args, char **argv)
  */
 bool 
 parse_address(char *address_to_parse, char *ip_address, char* port_number) 
-{
+{ //printf("parse address\n");
     int     i, j;
     bool    port_now = false;
 
@@ -91,7 +91,7 @@ parse_address(char *address_to_parse, char *ip_address, char* port_number)
  */
 char*
 parse_config(char argv[], char *addr)          
-{
+{ //printf("parse config\n");
     int     len, i, j;
     char    *path = NULL;
     char    handle[handle_len];
@@ -151,7 +151,7 @@ parse_config(char argv[], char *addr)
  */
 void 
 init_accept_clients(uv_loop_t *loop, uv_tcp_t *client_listener, char address[])
-{
+{ //printf("init accept clients \n");
     char                ip_address[ip_len], port_number[port_len];
     struct sockaddr_in  svc_address;
     struct in_addr      *ip_bytes = (struct in_addr *) malloc (sizeof(struct in_addr));
@@ -184,7 +184,7 @@ init_accept_clients(uv_loop_t *loop, uv_tcp_t *client_listener, char address[])
  */
 void 
 init_signals(uv_signal_t *signal_event)
-{    
+{ //printf("init_signals \n");
     uv_signal_init(loop, signal_event);
     uv_signal_start(signal_event, signal_cb, SIGINT);
 }
@@ -205,6 +205,6 @@ main(int argc, char **argv)
     clients->base_path = parse_config(argv[1], client_address); 
     init_accept_clients(loop, &(clients->listener), client_address);
 
-    init_signals(&signal_event);
-    uv_run(loop, UV_RUN_DEFAULT); printf("end main \n");
+    init_signals(&signal_event); 
+    uv_run(loop, UV_RUN_DEFAULT); //printf("end main \n");
 }

@@ -115,6 +115,6 @@ bool client_owns_process(client *input_client, process *input_process);
 client* find_client_from_process(process *input_process);
 process* find_process_from_pipe(uv_stream_t *info_pipe);
 client* find_client_from_connection(uv_stream_t *client_conn);
-void find_client_and_process_from_process_watcher(uv_process_t *watcher, client **ptr_to_client, process_node **ptr_to_process_node);
+void find_client_and_process_from_process_watcher(uv_process_t *watcher, client **return_client, process_node **return_process_node);
 
 #endif 
