@@ -84,7 +84,9 @@ child_exit(uv_process_t *req, int exit_status, int term_signal)
  */
 void 
 read_out(uv_stream_t *out_pipe, ssize_t nread, uv_buf_t buf)
-{printf("read_out\n");
+{printf("read_out, nread: %d\n", (int) nread);
+    if (nread < 1)
+        return;
 
     int             buffer_size_increase = 0, i;
     process         *current_process = find_process_from_pipe(out_pipe);
@@ -107,7 +109,9 @@ read_out(uv_stream_t *out_pipe, ssize_t nread, uv_buf_t buf)
  */
 void 
 read_err(uv_stream_t *err_pipe, ssize_t nread, uv_buf_t buf)
-{printf("read_err\n");
+{printf("read_err, nread: %d\n", (int) nread);
+    if (nread < 1)
+    return;
 
     int             buffer_size_increase = 0, i;
     process         *current_process = find_process_from_pipe(err_pipe);
@@ -183,7 +187,6 @@ process_data_from_client(client *current_client, ssize_t nread, uv_buf_t buf)
         current_client->data[j++] = data_recived[i++];
 
     current_client->data_position = j;
-    free(data_recived); 
 }
 
 /*
@@ -199,13 +202,13 @@ assemble_command(char *path, json_object *jobj)
     i = json_object_get_string_len(hook);
     len = strlen(path) + i + 2;
     command = (char *) malloc(len); 
-    strcpy(command, path);
+    strcpy(command, path); printf("cat n hook: %s i: %d\n", json_object_get_string(hook), i);
     strncat(command, json_object_get_string(hook), i);
 
     for (i = 0; i < len; i++)
         if (command[i] == '.')
             command[i] = '/';
-
+printf("assembled: %s\n", command);
     json_object_put(hook);
     return (command);
 }
@@ -236,7 +239,7 @@ execute_request(client *current_client, char* path)
 
     reset_client(current_client);
     command = assemble_command(path, jobj);
-
+printf("command: %s\n", command);
     file_exists = file_exist(command);
     if (file_exists){
     args[0] = command;
@@ -298,7 +301,7 @@ package_reply(process *current_process, int *len)
     json_object_object_add  (reply_json_object, "stderr", temp_string_json_object); 
 //    json_object_put(temp_string_json_object); printf("new string json obj again \n");
     temp_string_json_object = json_object_new_string(current_process->process_call); 
-    json_object_object_add (reply_json_object, "Hook", temp_string_json_object); 
+    json_object_object_add (reply_json_object, "hook", temp_string_json_object); 
 
     reply = json_object_to_json_string(reply_json_object); 
     *len = strlen(reply); 
@@ -315,7 +318,7 @@ package_reply(process *current_process, int *len)
  */
 void 
 send_reply (client *current_client, char *reply_txt, int reply_size)
-{ printf("send reply \n");
+{ printf("send reply, reply: %s\n", reply_txt);
     uv_write_t      *data_len_write = NULL;
     uv_write_t      *data_write = NULL;
     uv_buf_t        data_len_buff;
@@ -372,7 +375,6 @@ on_read(uv_stream_t *client_conn, ssize_t nread, uv_buf_t buf)
         if (nread == UV_EOF)
             fprintf(stderr, "Read error: EOF.\n");
         uv_close((uv_handle_t*) client_conn, NULL);
-        return;
     }
     else {
 
