@@ -360,7 +360,7 @@ find_process_from_pipe(uv_stream_t *info_pipe)
     client              *curr_client = NULL;
     process_node        *curr_process_node = NULL;
     process             *curr_process = NULL;
-
+//printf("variable declared -- ");
     while (curr_node != NULL){
         curr_client = curr_node->client_data;
         if (curr_client != NULL){
@@ -370,7 +370,7 @@ find_process_from_pipe(uv_stream_t *info_pipe)
                 curr_process = curr_process_node->process_data;
                 if(curr_process != NULL && (&curr_process->out_pipe == (uv_pipe_t *) info_pipe || &curr_process->err_pipe == (uv_pipe_t *) info_pipe)){
                     curr_node = NULL;
-                    curr_process_node = NULL;
+                    curr_process_node = NULL; //printf("process found -- ");
                 }
                 else {
                     curr_process_node = curr_process_node->next;
@@ -385,7 +385,7 @@ find_process_from_pipe(uv_stream_t *info_pipe)
             curr_node = curr_node->next;
         }
     }
-
+//printf ("returning \n");
     return(curr_process);
 }
 
@@ -397,17 +397,18 @@ find_client_from_connection(uv_stream_t *client_conn)
 { printf("find client from connection\n");
     client_node         *curr_node = clients->head;
     client              *curr_client = NULL;
-
+printf("variables declared -- ");
     while (curr_node != NULL){
         curr_client = curr_node->client_data;
         if (curr_client->client_connection == (uv_tcp_t *) client_conn){
-            curr_node = NULL;
+            curr_node = NULL; printf("client found -- ");
         }
         else {
             curr_node = curr_node->next;
             curr_client = NULL;
         }
     }
+printf("returning %p \n", curr_client);
     return (curr_client);
 }
 

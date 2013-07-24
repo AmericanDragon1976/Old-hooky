@@ -89,6 +89,9 @@ read_out(uv_stream_t *out_pipe, ssize_t nread, uv_buf_t buf)
     int             buffer_size_increase = 0, i;
     process         *current_process = find_process_from_pipe(out_pipe);
 
+    if (current_process == NULL) // TODO: call function to prune dead connections. 
+        return;
+
     while (current_process->out_position + nread > current_process->out_len + buffer_size_increase)
         buffer_size_increase += data_size;
 
@@ -108,6 +111,9 @@ read_err(uv_stream_t *err_pipe, ssize_t nread, uv_buf_t buf)
 
     int             buffer_size_increase = 0, i;
     process         *current_process = find_process_from_pipe(err_pipe);
+
+    if (current_process == NULL) // TODO: call function to prune dead connections. 
+        return;
 
     while (current_process->err_position + nread > current_process->err_len + buffer_size_increase)
         buffer_size_increase += data_size;
@@ -278,7 +284,7 @@ execute_request(client *current_client, char* path)
  * Assembles a responce for the client, from all the data a running process returned, in json format. 
  */
 char* 
-package_reply(process *current_process, int *len)    // TODO: add associated hook and payload data to reply
+package_reply(process *current_process, int *len) 
 {printf("package_reply \n");
     char                        *reply;
     struct json_object          *reply_json_object = json_object_new_object();
@@ -362,23 +368,30 @@ on_write (uv_write_t *req, int status)
 void 
 on_read(uv_stream_t *client_conn, ssize_t nread, uv_buf_t buf)
 {printf("on read, nread: %d\n", (int) nread);
-    if (nread == -1) { printf("nread: %d\n", (int) nread);          // TODO: verify detect client dc is working and fix if not
+    if (nread < 0) { //printf("nread: %d\n", (int) nread);          // TODO: fix detect client dc
         if (nread == UV_EOF)
             fprintf(stderr, "Read error: EOF.\n");
         uv_close((uv_handle_t*) client_conn, NULL);
         return;
     }
+    else {
 
-    client          *current_client = NULL;
-    current_client = find_client_from_connection(client_conn);
+        client          *current_client = NULL;
+        current_client = find_client_from_connection(client_conn); //printf("client_conn: %p\n", client_conn);
 
-    if (nread > 0)
-        process_data_from_client(current_client, nread, buf);
+        if (current_client != NULL) {
+            if (nread > 0)
+                process_data_from_client(current_client, nread, buf);
 
-    if(current_client->data_length == current_client->data_position && current_client->data_length != 0)
-        execute_request(current_client, clients->base_path);
+            if(current_client->data_length == current_client->data_position && current_client->data_length != 0)
+                execute_request(current_client, clients->base_path);
+        }
+        else {
+            // TODO: call function to prune dead connections. 
+            uv_close((uv_handle_t*) client_conn, NULL);
+        }
+    }
 }
-
 
 /* 
  * catches interrupt signal and allows the program to cleanup before exiting. 
