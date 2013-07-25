@@ -32,7 +32,7 @@
  */
 process* 
 new_null_process()
-{printf("new null process\n");
+{//printf("new null process\n");
     process         *new_process = (process *) malloc(sizeof(process));
 
     new_process->process_call = NULL;
@@ -54,7 +54,7 @@ new_null_process()
  */
 process_node* 
 new_process_node(process* input_process, process_node* input_node)
-{printf("new process node\n");
+{//printf("new process node\n");
     process_node        *new_node = (process_node *) malloc(sizeof(process_node));
 
     new_node->process_data = input_process;
@@ -68,7 +68,7 @@ new_process_node(process* input_process, process_node* input_node)
  */
 process_node* 
 new_null_process_node()
-{printf("new null process node\n");
+{//printf("new null process node\n");
     return(new_process_node(NULL, NULL));
 }
 
@@ -77,7 +77,7 @@ new_null_process_node()
  */
 client* 
 new_client(uv_tcp_t *input_connection, char *input_data)
-{ printf("new client\n");
+{//printf("new client\n");
     client          *new_client = (client *) malloc(sizeof(client));
 
     new_client->client_connection = input_connection;
@@ -93,7 +93,7 @@ new_client(uv_tcp_t *input_connection, char *input_data)
  */
 client* 
 new_null_client()
-{printf("new null client\n");
+{//printf("new null client\n");
     uv_tcp_t        *new_connection = (uv_tcp_t *) malloc(sizeof(uv_tcp_t));
 
     return(new_client(new_connection, NULL));
@@ -104,7 +104,7 @@ new_null_client()
  */
 client_list* 
 new_client_list(client_node *input_node, char *path)
-{printf("new client list\n");
+{//printf("new client list\n");
     client_list         *new_client_list = (client_list *) malloc(sizeof(client_list));
 
     new_client_list->head = input_node;
@@ -118,7 +118,7 @@ new_client_list(client_node *input_node, char *path)
  */
 client_list* 
 new_null_client_list()
-{printf("new null client list\n");
+{//printf("new null client list\n");
     return(new_client_list(NULL, NULL));
 }
 
@@ -127,7 +127,7 @@ new_null_client_list()
  */
 client_node* 
 new_client_node(client *input_client, client_node *input_node)
-{printf("new client node\n");
+{//printf("new client node\n");
     client_node     *new_client_node = (client_node *) malloc(sizeof(client_node));
 
     new_client_node->client_data = input_client;
@@ -141,7 +141,7 @@ new_client_node(client *input_client, client_node *input_node)
  */
 client_node* 
 new_null_client_node()
-{printf("new null client node\n");
+{//printf("new null client node\n");
     return(new_client_node(NULL, NULL));
 }
 
@@ -150,11 +150,11 @@ new_null_client_node()
  */
 client* 
 free_client(client *old_client)
-{printf("free client\n");
+{//printf("free client\n");
     if (old_client == NULL)
         return(old_client);
 
-    uv_close((uv_handle_t*) old_client->client_connection, NULL);
+//    uv_close((uv_handle_t*) old_client->client_connection, NULL);
     free(old_client->client_connection);
     free(old_client->data);
     free_process_nodes(old_client->processes);
@@ -168,12 +168,12 @@ free_client(client *old_client)
  */
 client_list* 
 free_client_list(client_list *old_list)
-{printf("free client list");
+{//printf("free client list");
     if (old_list == NULL)
         return(old_list);
 
     if (old_list->head != NULL)
-        old_list->head = free_client_node(old_list->head);
+        old_list->head = free_client_nodes(old_list->head);
 
     free(old_list);
     old_list = NULL;
@@ -184,8 +184,8 @@ free_client_list(client_list *old_list)
  * Frees all memory associated with a client node checking for NULL pointers. 
  */
 client_node* 
-free_client_node(client_node *old_node)
-{ printf("free client node\n");
+free_client_nodes(client_node *old_node)
+{//printf("free client node\n");
     if (old_node == NULL)
         return (old_node);
 
@@ -193,10 +193,26 @@ free_client_node(client_node *old_node)
         old_node->client_data = free_client(old_node->client_data);
 
     if (old_node->next != NULL)
-        old_node->next = free_client_node(old_node->next);
+        old_node->next = free_client_nodes(old_node->next);
 
     free(old_node);
     old_node = NULL;
+    return(old_node);
+}
+
+client_node* 
+free_one_client_node(client_node *old_node)
+{
+    if (old_node == NULL)
+        return (old_node);
+
+    if (old_node->client_data != NULL)
+        old_node->client_data = free_client(old_node->client_data);
+
+    client_node     *temp_node = old_node->next;
+    free(old_node);
+    old_node = temp_node;
+
     return(old_node);
 }
 
@@ -205,7 +221,7 @@ free_client_node(client_node *old_node)
  */
 process_node* 
 free_process_nodes(process_node *old_node)
-{printf("free process nodes\n");
+{//printf("free process nodes\n");
     if (old_node == NULL)
         return(old_node);
 
@@ -222,7 +238,7 @@ free_process_nodes(process_node *old_node)
  */
 process_node* 
 free_one_process_node(process_node *old_node)
-{ printf("free one process node\n");
+{//printf("free one process node\n");
     if (old_node == NULL)
         return(old_node);
 
@@ -241,7 +257,7 @@ free_one_process_node(process_node *old_node)
  */
 process* 
 free_process(process* old_process)
-{printf("free process\n");
+{//printf("free process\n");
     if (old_process == NULL)
         return (old_process); 
 
@@ -258,7 +274,7 @@ free_process(process* old_process)
  */
 void 
 print_client(client *client_to_print)
-{ printf("print client\n");
+{//printf("print client\n");
     if (client_to_print == NULL){
         printf("NULL client \n");
     }
@@ -280,7 +296,7 @@ print_client(client *client_to_print)
  */
 void 
 print_client_node(client_node *node_to_print)
-{printf("print client node\n");
+{//printf("print client node\n");
     printf("Node:  \n");
 
     if (node_to_print == NULL){
@@ -297,7 +313,7 @@ print_client_node(client_node *node_to_print)
  */
 void 
 print_client_list(client_list *list_to_print)
-{printf("print client list\n");
+{//printf("print client list\n");
     if (list_to_print == NULL){
         printf("NULL list \n");
     }
@@ -313,7 +329,7 @@ print_client_list(client_list *list_to_print)
  */
 bool
 client_owns_process(client *input_client, process *input_process)
-{ printf("client owns process\n");
+{//printf("client owns process\n");
     process_node            *curr_node = input_client->processes;
 
     while (curr_node != NULL){
@@ -329,15 +345,20 @@ client_owns_process(client *input_client, process *input_process)
 /*
  * Takes a process and searchs the client list for the client that owns the process, returnes that client. 
  */
- client*
+client_node*
 find_client_from_process(process *input_process)
-{printf("find client from process\n");
+{//printf("find client from process\n");
+    if (clients == NULL)
+        return(NULL);
+
     client_node         *curr_node = clients->head;
+    client_node         *return_node = NULL;
     client              *curr_client = NULL;
 
     while (curr_node != NULL){
         curr_client = curr_node->client_data;
         if (client_owns_process(curr_client, input_process)){
+            return_node = curr_node;
             curr_node = NULL;
         }
         else {
@@ -346,21 +367,25 @@ find_client_from_process(process *input_process)
         }
     }
 
-    return (curr_client);
+    return (return_node);
 }
 
 /*
  * Takes a pipe connecting a child process to either standard out or standard error and searches the list of clients for the 
  * process that is connected by that pipe and returns it. 
  */
-process* 
+process_node* 
 find_process_from_pipe(uv_stream_t *info_pipe)
-{ printf("find process from pipe\n");
+{//printf("find process from pipe\n");
+    if (clients == NULL)
+        return(NULL);
+
     client_node         *curr_node = clients->head;
     client              *curr_client = NULL;
     process_node        *curr_process_node = NULL;
+    process_node        *return_node = NULL;
     process             *curr_process = NULL;
-//printf("variable declared -- ");
+
     while (curr_node != NULL){
         curr_client = curr_node->client_data;
         if (curr_client != NULL){
@@ -369,6 +394,7 @@ find_process_from_pipe(uv_stream_t *info_pipe)
             while (curr_process_node != NULL){
                 curr_process = curr_process_node->process_data;
                 if(curr_process != NULL && (&curr_process->out_pipe == (uv_pipe_t *) info_pipe || &curr_process->err_pipe == (uv_pipe_t *) info_pipe)){
+                    return_node = curr_process_node;
                     curr_node = NULL;
                     curr_process_node = NULL; //printf("process found -- ");
                 }
@@ -385,31 +411,36 @@ find_process_from_pipe(uv_stream_t *info_pipe)
             curr_node = curr_node->next;
         }
     }
-//printf ("returning \n");
-    return(curr_process);
+
+    return(return_node);
 }
 
 /*
  * Takes a connection and finds the client in the list connected on that connection and returns it. 
  */
-client* 
+client_node* 
 find_client_from_connection(uv_stream_t *client_conn)
-{ printf("find client from connection\n");
+{//printf("find client from connection\n");
+    if (clients == NULL)
+        return(NULL);
+
     client_node         *curr_node = clients->head;
+    client_node         *return_client_node = NULL;
     client              *curr_client = NULL;
-printf("variables declared -- ");
+//printf("variables declared -- ");
     while (curr_node != NULL){
         curr_client = curr_node->client_data;
         if (curr_client->client_connection == (uv_tcp_t *) client_conn){
-            curr_node = NULL; printf("client found -- ");
+            return_client_node = curr_node;
+            curr_node = NULL; //printf("client found -- ");
         }
         else {
             curr_node = curr_node->next;
             curr_client = NULL;
         }
     }
-printf("returning %p \n", curr_client);
-    return (curr_client);
+//printf("returning %p \n", curr_client);
+    return (return_client_node);
 }
 
 /*
@@ -419,7 +450,10 @@ printf("returning %p \n", curr_client);
  */
 void 
 find_client_and_process_from_process_watcher(uv_process_t *watcher, client **return_client, process_node **return_process_node)
-{ printf("find client and process from watcher\n");
+{//printf("find client and process from watcher\n");
+    if (clients == NULL)
+        return(NULL);
+
     client          *temp_client = NULL;
     client_node     *temp_client_node = clients->head;
     process         *temp_process = NULL;
