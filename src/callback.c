@@ -47,7 +47,7 @@ child_exit(uv_process_t *req, int exit_status, int term_signal)
     process_node            *curr_process_node = NULL, *temp_process_node = NULL;
     uv_process_t            *temp_process_watcher = NULL;
     char                    *reply_txt = NULL;
-    int                     *reply_len = (int *) malloc(sizeof(int));
+    int                     reply_len = 0;
 
     find_client_and_process_from_process_watcher(req, &curr_client, &curr_process_node); 
 
@@ -57,14 +57,13 @@ child_exit(uv_process_t *req, int exit_status, int term_signal)
     else {//printf("process_call: %s\n", curr_process_node->process_data->process_call);
 
         curr_process_node->process_data->exit_code = exit_status; 
-        reply_txt = package_reply(curr_process_node->process_data, reply_len);
-        send_reply(curr_client, reply_txt, *reply_len);
-        free(reply_len);
-        reply_len = NULL; 
+        reply_txt = package_reply(curr_process_node->process_data, &reply_len);
+        send_reply(curr_client, reply_txt, reply_len);
+        free(reply_txt);
+        reply_txt = NULL;
         uv_close((uv_handle_t *) &curr_process_node->process_data->out_pipe, NULL);
         uv_close((uv_handle_t *) &curr_process_node->process_data->err_pipe, NULL);
         uv_close((uv_handle_t *) req, NULL);
-        // DO I NEED TO CALL UV_CLOSE ON THE PIPES TOO??   
 
         if (curr_client->processes == curr_process_node){
             curr_client->processes = free_one_process_node(curr_process_node);
@@ -254,10 +253,20 @@ execute_request(client *current_client)
     bool                    file_exists;
     process_node            *temp_node = NULL;
     json_object             *jobj = json_tokener_parse(current_client->data);
+    json_object             *hook_jobj = json_object_object_get(jobj, "hook");
+    json_object             *payload_jobj = json_object_object_get(jobj, "payload");
     uv_process_options_t    options = {0};
 
-    hook = json_object_get_string(json_object_object_get(jobj, "hook")); 
-    payload = json_object_get_string(json_object_object_get(jobj, "payload"));
+    len =  json_object_get_string_len(hook_jobj) + 1;
+    hook = (char *) malloc(len);
+    strcpy(hook, json_object_get_string(hook_jobj));
+    json_object_put(hook_jobj);
+
+    len =  json_object_get_string_len(payload_jobj) + 1;
+    payload = (char *) malloc(len);
+    strcpy(payload, json_object_get_string(payload_jobj));
+    json_object_put(payload_jobj);
+    json_object_put(jobj);
 
     temp_node = new_process_node(new_null_process(), NULL);
     temp_node->process_data->process_call = current_client->data; //printf("process_call: %s\n", temp_node->process_data->process_call);
@@ -310,10 +319,12 @@ execute_request(client *current_client)
         //printf("process_call: %s\n", current_client->processes->process_data->process_call);
     }
 
+    free(hook);
+    hook = NULL;
+    free(payload);
+    payload = NULL;
     free(command); 
     command = NULL;
-    json_object_put(jobj);
-
 }
 
 /*
@@ -325,23 +336,24 @@ package_reply(process *current_process, int *len)
     char                        *reply;
     struct json_object          *reply_json_object = json_object_new_object();
     struct json_object          *temp_int_json_object = json_object_new_int64(current_process->exit_code);
-    struct json_object          *temp_string_json_object = json_object_new_string(current_process->out_output);
-//printf("reply string building\n -- ");
-    json_object_object_add  (reply_json_object, "exit_code", temp_int_json_object); //printf("%s\n -- ",json_object_to_json_string(reply_json_object));
-    json_object_object_add  (reply_json_object, "stdout", temp_string_json_object); //printf("%s\n -- ",json_object_to_json_string(reply_json_object));
-//    json_object_put(temp_string_json_object);
-    temp_string_json_object = json_object_new_string(current_process->err_output); 
-    json_object_object_add  (reply_json_object, "stderr", temp_string_json_object); //printf("%s\n -- ",json_object_to_json_string(reply_json_object));
-//    json_object_put(temp_string_json_object); 
-    temp_string_json_object = json_object_new_string(current_process->process_call); 
-    json_object_object_add (reply_json_object, "hook", temp_string_json_object); //printf("%s\n -- ",json_object_to_json_string(reply_json_object));
+    struct json_object          *temp_stdout_json_object = json_object_new_string(current_process->out_output);
+    struct json_object          *temp_stderr_json_object = json_object_new_string(current_process->err_output);
+    struct json_object          *temp_hook_json_object = json_object_new_string(current_process->process_call);
 
-    reply = json_object_to_json_string(reply_json_object); //printf("%s\n -- ",json_object_to_json_string(reply_json_object));
-    *len = strlen(reply); 
+    json_object_object_add  (reply_json_object, "exit_code", temp_int_json_object); 
+    json_object_object_add  (reply_json_object, "stdout", temp_stdout_json_object);
+    json_object_object_add  (reply_json_object, "stderr", temp_stderr_json_object);
+    json_object_object_add (reply_json_object, "hook", temp_hook_json_object); 
 
-//    json_object_put(reply_json_object);
-//    json_object_put(temp_int_json_object);
-//    json_object_put(temp_string_json_object); 
+    *len = strlen(json_object_to_json_string(reply_json_object)) + 1;
+    reply = (char *) malloc(*len);
+    strcpy(reply, json_object_to_json_string(reply_json_object));
+
+    json_object_put(temp_int_json_object);
+    json_object_put(temp_stdout_json_object); 
+    json_object_put(temp_stderr_json_object); 
+    json_object_put(temp_hook_json_object); 
+    json_object_put(reply_json_object);
 //printf("reply: %s\n", reply);
     return(reply);
 }

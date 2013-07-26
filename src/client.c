@@ -452,7 +452,7 @@ void
 find_client_and_process_from_process_watcher(uv_process_t *watcher, client **return_client, process_node **return_process_node)
 {//printf("find client and process from watcher\n");
     if (clients == NULL)
-        return(NULL);
+        return;
 
     client          *temp_client = NULL;
     client_node     *temp_client_node = clients->head;
