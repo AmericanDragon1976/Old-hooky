@@ -96,7 +96,7 @@ typedef struct process{
 process* new_null_process();
 process_node* new_process_node(process* input_process, process_node* input_node);
 process_node* new_null_process_node();
-client* new_client(uv_tcp_t *input_connection, char *input_data);
+client* new_client(uv_tcp_t *input_connection, process_node *input_process_node);
 client* new_null_client();
 client_list* new_client_list(client_node *input_node, char *path);
 client_list* new_null_client_list();

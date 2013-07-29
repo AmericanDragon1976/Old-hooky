@@ -37,9 +37,9 @@ new_null_process()
 
     new_process->process_call = NULL;
     new_process->out_output = (char *) malloc(data_size);
-    strncpy(new_process->out_output, "", data_size);
+    strncpy(new_process->out_output, "", data_size - 1);
     new_process->err_output = (char *) malloc(data_size);
-    strncpy(new_process->err_output, "", data_size);
+    strncpy(new_process->err_output, "", data_size - 1);
     new_process->out_len = data_size;
     new_process->err_len = data_size;
     new_process->out_position = 0;
@@ -76,14 +76,15 @@ new_null_process_node()
  * Allocates memory for a new client sets pointer members to values passes in, and set other values to 0.
  */
 client* 
-new_client(uv_tcp_t *input_connection, char *input_data)
+new_client(uv_tcp_t *input_connection, process_node *input_process_node)
 {//printf("new client\n");
     client          *new_client = (client *) malloc(sizeof(client));
 
     new_client->client_connection = input_connection;
     new_client->data_length = 0;
-    new_client->data = input_data;
+    new_client->data = NULL;
     new_client->data_position = 0;
+    new_client->processes = input_process_node;
 
     return(new_client);
 }
@@ -147,6 +148,7 @@ new_null_client_node()
 
 /*
  * Frees all memory associated with a client pointer checking for NULL pointers. 
+ * If client_connection needs closing it must be closed before calling this funtion.
  */
 client* 
 free_client(client *old_client)
@@ -154,11 +156,14 @@ free_client(client *old_client)
     if (old_client == NULL)
         return(old_client);
 
-//    uv_close((uv_handle_t*) old_client->client_connection, NULL);
-    free(old_client->client_connection);
-    free(old_client->data);
-    free_process_nodes(old_client->processes);
-    free(old_client);
+//    if (old_client->client_connection != NULL)
+//        uv_close((uv_handle_t *) old_client->client_connection, NULL);
+    free(old_client->client_connection); 
+    old_client->client_connection = NULL;
+    free(old_client->data); 
+    old_client->data = NULL;
+    old_client->processes = free_process_nodes(old_client->processes); 
+    free(old_client); 
     old_client = NULL;
     return(old_client);
 }
@@ -168,7 +173,7 @@ free_client(client *old_client)
  */
 client_list* 
 free_client_list(client_list *old_list)
-{//printf("free client list");
+{//printf("free client list\n");
     if (old_list == NULL)
         return(old_list);
 
@@ -185,7 +190,7 @@ free_client_list(client_list *old_list)
  */
 client_node* 
 free_client_nodes(client_node *old_node)
-{//printf("free client node\n");
+{//printf("free client nodes\n");
     if (old_node == NULL)
         return (old_node);
 
@@ -225,8 +230,8 @@ free_process_nodes(process_node *old_node)
     if (old_node == NULL)
         return(old_node);
 
-    free_process(old_node->process_data);
-    free_process_nodes(old_node->next);
+    old_node->process_data = free_process(old_node->process_data);
+    old_node->next = free_process_nodes(old_node->next);
 
     free(old_node);
     old_node = NULL;
@@ -244,7 +249,7 @@ free_one_process_node(process_node *old_node)
 
     process_node        *temp_node = old_node->next;
 
-    free_process(old_node->process_data);
+    old_node->process_data = free_process(old_node->process_data);
     free(old_node);
     old_node = temp_node;
 
