@@ -92,13 +92,16 @@ read_out(uv_stream_t *out_pipe, ssize_t nread, uv_buf_t buf)
 
     if (temp_node == NULL){
         printf("Error: NULL process node returned from find process from pipe\n");
+        free(buf.base);
         return;
     }
 
     process         *current_process = temp_node->process_data;
 
-    if (current_process == NULL) // TODO: call function to prune dead connections. 
+    if (current_process == NULL){ // TODO: call function to prune dead connections. 
+        free(buf.base);
         return;
+    }
 
     while (current_process->out_position + nread > current_process->out_len + buffer_size_increase)
         buffer_size_increase += data_size;
@@ -126,13 +129,16 @@ read_err(uv_stream_t *err_pipe, ssize_t nread, uv_buf_t buf)
 
     if (temp_node == NULL){
         printf("Error: NULL process node returned from find process from pipe\n");
+        free(buf.base);
         return;
     }
 
     process         *current_process = temp_node->process_data;
 
-    if (current_process == NULL) // TODO: call function to prune dead connections. 
+    if (current_process == NULL){ // TODO: call function to prune dead connections. .
+        free(buf.base);
         return;
+    }
 
     while (current_process->err_position + nread > current_process->err_len + buffer_size_increase)
         buffer_size_increase += data_size;
@@ -214,7 +220,6 @@ process_data_from_client(client *current_client, ssize_t nread, uv_buf_t buf)
 //    for (j = 0; j < current_client->data_length; j++)
 //        printf("%c", current_client->data[j]);
 //    printf("\n");
-//    free(buf.base);
 }
 
 /*
@@ -313,6 +318,7 @@ execute_request(client *current_client)
         strncpy(temp_node->process_data->err_output, "", temp_node->process_data->err_len);
         reply = package_reply(temp_node->process_data, &len);
         send_reply(current_client, reply, len);
+        free(reply);
         free_process_nodes(temp_node);
     }
     else {
@@ -411,8 +417,6 @@ on_write (uv_write_t *req, int status)
 
     free(req);
     req = NULL;
-    // TODO: verify memory management with libuv and json-c lib
-
 }
 
 /*
@@ -485,43 +489,4 @@ file_exist(char file_path[])
         return(true);
     else 
         return(false);
-}
-
-/*
- * 
- */
-void 
-client_dc(void *ctx)          // TODO:    adapt to libuv 
-{//printf("client_dc\n");
-    if (ctx == NULL){
-        fprintf(stderr,"Fatal error: Null list passed to client_dc()");
-        exit(0);
-    }
-
-    client          *temp_client;
-    client_list     *list = (client_list *) ctx;
-
-    if (list->head == NULL){
-        fprintf(stderr,"Fatal error: Empty list passed to client_dc()");
-        exit(0);
-    }
-
-    client_node     *current_node = list->head, *temp_node = list->head->next;
-
-//    if (current_node->client_data->client_bufferevent == buffer_event){
-//        list->head = current_node->next;
-//        free_client_node(current_node);
-//    }
-//    else {
-//        while (temp_node != NULL){
-//            if (temp_node->client_data->client_bufferevent == buffer_event){
-//                current_node->next = temp_node->next;
-//                free_client_node(temp_node);
-//            }
-//            else {
-//               current_node = temp_node;
-//                temp_node = temp_node->next;
-//            }
-//        }
-//    }
 }
