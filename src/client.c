@@ -177,11 +177,14 @@ free_client_list(client_list *old_list)
     if (old_list == NULL)
         return(old_list);
 
-    if (old_list->head != NULL)
-        old_list->head = free_client_nodes(old_list->head);
+    old_list->head = free_client_nodes(old_list->head);
+
+    free(old_list->base_path);
+    old_list->base_path = NULL;
 
     free(old_list);
     old_list = NULL;
+    
     return(old_list);
 }
 

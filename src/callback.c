@@ -107,6 +107,8 @@ read_out(uv_stream_t *out_pipe, ssize_t nread, uv_buf_t buf)
 
     for (i = 0; i < nread; i++)
         current_process->out_output[current_process->out_position++] = buf.base[i];
+
+    free(buf.base);
 }
 
 /*
@@ -141,6 +143,7 @@ read_err(uv_stream_t *err_pipe, ssize_t nread, uv_buf_t buf)
         current_process->err_output[current_process->err_position++] = buf.base[i];
         //printf("%c", buf.base[i]);
     } //printf("\nprocess_call: %s\n", current_process->process_call);
+    free(buf.base);
 }
 
 /*
@@ -211,6 +214,7 @@ process_data_from_client(client *current_client, ssize_t nread, uv_buf_t buf)
 //    for (j = 0; j < current_client->data_length; j++)
 //        printf("%c", current_client->data[j]);
 //    printf("\n");
+    free(buf.base);
 }
 
 /*

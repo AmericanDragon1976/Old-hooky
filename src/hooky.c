@@ -171,8 +171,9 @@ init_accept_clients(uv_loop_t *loop, uv_tcp_t *client_listener, char address[])
     uv_tcp_bind(client_listener, svc_address);
 
     int r = uv_listen((uv_stream_t*) client_listener, 128, on_connect);
-    if (r) {
+    if (r != 0) {
         fprintf(stderr, "Listen error \n");
+        exit(1);
     }
 }
 
