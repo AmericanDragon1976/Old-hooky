@@ -455,7 +455,7 @@ on_read(uv_stream_t *client_conn, ssize_t nread, uv_buf_t buf)
 
     if (nread < 1) { //printf("nread: %d\n", (int) nread);          // TODO: fix detect client dc
         if (nread == UV_EOF) {
-            fprintf(stderr, "Read error: EOF. %p\n", current_client);
+            fprintf(stderr, "Read error: EOF. \n");
 
             //uv_read_stop((uv_stream_t *) current_client->client_connection);
             //uv_close((uv_handle_t *) current_client->client_connection, NULL); 
