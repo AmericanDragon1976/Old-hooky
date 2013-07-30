@@ -175,6 +175,7 @@ init_accept_clients(uv_loop_t *loop, uv_tcp_t *client_listener, char address[])
         fprintf(stderr, "Listen error \n");
         exit(1);
     }
+    free(ip_bytes);
 }
 
 

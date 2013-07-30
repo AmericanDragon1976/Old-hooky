@@ -32,7 +32,7 @@
 uv_buf_t 
  alloc_buffer(uv_handle_t *handle, size_t suggested_size) 
 {//printf("alloc buffer \n");
-    return uv_buf_init((char*) malloc(suggested_size), suggested_size);             //FREE for this Malloc ?
+    return uv_buf_init((char*) malloc(suggested_size), suggested_size);             
 }
 
 /*
@@ -214,7 +214,7 @@ process_data_from_client(client *current_client, ssize_t nread, uv_buf_t buf)
 //    for (j = 0; j < current_client->data_length; j++)
 //        printf("%c", current_client->data[j]);
 //    printf("\n");
-    free(buf.base);
+//    free(buf.base);
 }
 
 /*
@@ -429,11 +429,13 @@ on_read(uv_stream_t *client_conn, ssize_t nread, uv_buf_t buf)
 
     if (nread < 1) { //printf("nread: %d\n", (int) nread);          // TODO: fix detect client dc
         if (nread == UV_EOF) {
-            fprintf(stderr, "Read error: EOF.\n");
+            fprintf(stderr, "Read error: EOF. %p\n", current_client);
 
-            if (clients->head = current_client_node){
+            //uv_read_stop((uv_stream_t *) current_client->client_connection);
+            //uv_close((uv_handle_t *) current_client->client_connection, NULL); 
+            if (clients->head = current_client_node){ 
                 clients->head = free_one_client_node(current_client_node);
-                current_client = NULL;
+                current_client = NULL; //printf("HUH \n");
             }
             else {
                 client_node         *temp_node = clients->head;
@@ -457,6 +459,7 @@ on_read(uv_stream_t *client_conn, ssize_t nread, uv_buf_t buf)
             uv_close((uv_handle_t*) client_conn, NULL);
         }
     }
+    free(buf.base);
 }
 
 /* 

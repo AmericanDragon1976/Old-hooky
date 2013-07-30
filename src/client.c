@@ -160,11 +160,14 @@ free_client(client *old_client)
 //        uv_close((uv_handle_t *) old_client->client_connection, NULL);
     free(old_client->client_connection); 
     old_client->client_connection = NULL;
+
     free(old_client->data); 
     old_client->data = NULL;
+
     old_client->processes = free_process_nodes(old_client->processes); 
     free(old_client); 
     old_client = NULL;
+
     return(old_client);
 }
 
@@ -210,12 +213,11 @@ free_client_nodes(client_node *old_node)
 
 client_node* 
 free_one_client_node(client_node *old_node)
-{
+{//printf("free one client node \n");
     if (old_node == NULL)
         return (old_node);
 
-    if (old_node->client_data != NULL)
-        old_node->client_data = free_client(old_node->client_data);
+    old_node->client_data = free_client(old_node->client_data);
 
     client_node     *temp_node = old_node->next;
     free(old_node);
@@ -229,7 +231,7 @@ free_one_client_node(client_node *old_node)
  */
 process_node* 
 free_process_nodes(process_node *old_node)
-{//printf("free process nodes\n");
+{//printf("free process nodes %p\n", old_node);
     if (old_node == NULL)
         return(old_node);
 
@@ -270,11 +272,18 @@ free_process(process* old_process)
         return (old_process); 
 
     free(old_process->process_call);
+    old_process->process_call = NULL;
+
     free(old_process->out_output);
+    old_process->out_output = NULL;
+
     free(old_process->err_output);
+    old_process->err_output = NULL;
+
     free(old_process);
     old_process = NULL;
-    return(NULL);
+
+    return(old_process);
 }
 
 /*
