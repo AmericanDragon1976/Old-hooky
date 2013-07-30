@@ -35,6 +35,24 @@ uv_buf_t
     return uv_buf_init((char*) malloc(suggested_size), suggested_size);             
 }
 
+uv_buf_t 
+ alloc_buffer_read_err(uv_handle_t *handle, size_t suggested_size) 
+{//printf("alloc buffer \n");
+    return uv_buf_init((char*) malloc(suggested_size), suggested_size);             
+}
+
+uv_buf_t 
+ alloc_buffer_read_out(uv_handle_t *handle, size_t suggested_size) 
+{//printf("alloc buffer \n");
+    return uv_buf_init((char*) malloc(suggested_size), suggested_size);             
+}
+
+uv_buf_t 
+ alloc_buffer_on_read(uv_handle_t *handle, size_t suggested_size) 
+{//printf("alloc buffer \n");
+    return uv_buf_init((char*) malloc(suggested_size), suggested_size);             
+}
+
 /*
  * Call back triggered when a child process finishes and returns. Sends the client the data from the 
  * process run and the origional hook that was sent when the process was launched. 
@@ -167,7 +185,7 @@ on_connect(uv_stream_t *listener, int status)
     uv_tcp_init(loop, connecting_client->client_connection);
 
     if (uv_accept(listener, (uv_stream_t*) connecting_client->client_connection) == 0) {
-        uv_read_start((uv_stream_t*) connecting_client->client_connection, alloc_buffer, on_read); 
+        uv_read_start((uv_stream_t*) connecting_client->client_connection, alloc_buffer_on_read, on_read); 
         client_node         *temp_node = new_client_node(connecting_client, clients->head);
         clients->head = temp_node;
     }
@@ -312,7 +330,7 @@ execute_request(client *current_client)
     }
 
     if (!file_exists || ret != 0){ //printf("file exist: %d \n", (int)file_exists);
-        fprintf(stderr, "%s\n", uv_strerror(ret));  
+        // fprintf(stderr, "%s\n", uv_strerror(ret));  
         temp_node->process_data->exit_code = 0;
         strncpy(temp_node->process_data->out_output, "", temp_node->process_data->out_len);
         strncpy(temp_node->process_data->err_output, "", temp_node->process_data->err_len);
@@ -322,8 +340,8 @@ execute_request(client *current_client)
         free_process_nodes(temp_node);
     }
     else {
-        uv_read_start((uv_stream_t*) &temp_node->process_data->out_pipe, alloc_buffer, read_out);
-        uv_read_start((uv_stream_t*) &temp_node->process_data->err_pipe, alloc_buffer, read_err);
+        uv_read_start((uv_stream_t*) &temp_node->process_data->out_pipe, alloc_buffer_read_out, read_out);
+        uv_read_start((uv_stream_t*) &temp_node->process_data->err_pipe, alloc_buffer_read_err, read_err);
         temp_node->next = current_client->processes;
         current_client->processes = temp_node;
         //printf("process_call: %s\n", current_client->processes->process_data->process_call);
