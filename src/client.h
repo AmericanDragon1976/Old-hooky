@@ -66,56 +66,87 @@ typedef struct process{
 
  typedef struct process_node {
     process                 *process_data;
-    struct process_node     *next;
+    struct process_node     *next, *previous;
 } process_node;
 
  typedef struct client{
-    uv_tcp_t 				*client_connection;
+    uv_tcp_t                *client_connection;
     unsigned int            data_length;
     unsigned int            data_position;
     char                    *data;
-    process_node            *processes;
+    process_node            *processes, *processes_tail;
 } client;
 
  typedef struct client_node{
     client              *client_data;
-    struct client_node  *next;
+    struct client_node  *next, *previous;
 } client_node;
 
  typedef struct client_list{
-    client_node     *head;
-    char 			*base_path;
+    client_node     *head, *tail;
+    char            *base_path;
     uv_tcp_t        listener;
 } client_list;
 
- extern client_list 	*clients;
+typedef struct watcher_package{
+    uv_process_t            *child_req;
+    process_node            *containing_process_node;
+    client_node             *owner_node;
+ }watcher_pack;
+
+ typedef struct watcher_node{
+    struct watcher_node         *next;
+    struct watcher_node         *previous;
+    watcher_pack                *pack_data;
+ }watcher_node;
+
+ typedef struct watcher_list{
+    watcher_node        *head, *tail;
+ }watcher_list;
+
+ extern client_list     *clients;
  extern uv_loop_t       *loop;
+ extern watcher_list    *watchers;
 
 // functions
 
 process* new_null_process();
-process_node* new_process_node(process* input_process, process_node* input_node);
+process_node* new_process_node(process *input_process, process_node *next, process_node *prev);
 process_node* new_null_process_node();
-client* new_client(uv_tcp_t *input_connection, process_node *input_process_node);
+
+client* new_client(uv_tcp_t *input_connection, process_node *first_process_node, process_node *last_process_node);
 client* new_null_client();
-client_list* new_client_list(client_node *input_node, char *path);
+client_list* new_client_list(client_node *head_node, client_node *tail_node, char *path);
 client_list* new_null_client_list();
-client_node* new_client_node(client *input_client, client_node *input_node);
+client_node* new_client_node(client *input_client, client_node *next_node, client_node *prev_node);
 client_node* new_null_client_node();
+
+watcher_pack* new_watcher_pack(uv_process_t *child_req, process_node *containing_process_node, client_node *owner_node);
+watcher_pack* new_null_watcher_pack();
+watcher_node* new_watcher_node(watcher_node *next, watcher_node *prev, watcher_pack *pack_data);
+watcher_node* new_null_watcher_node();
+watcher_list* new_watcher_list(watcher_node *head, watcher_node *tail);
+watcher_list* new_null_watcher_list();
+
+void free_one_watcher_node(watcher_node *old_node);
+watcher_node* free_watcher_nodes(watcher_node *old_node);
+watcher_list* free_watcher_list(watcher_list *old_list);
 client* free_client(client *old_client);
 client_list* free_client_list(client_list *old_list);
 client_node* free_client_nodes(client_node *old_node);
-client_node* free_one_client_node(client_node *old_node);
+void free_one_client_node(client_node *old_node);
 process_node* free_process_nodes(process_node *old_node);
-process_node* free_one_process_node(process_node *old_node);
+void free_one_process_node(client_node *owner_node, process_node *old_node);
 process* free_process(process* old_process);
+
 void print_client(client *client_to_print);
 void print_client_node(client_node *node_to_print);
 void print_client_list(client_list *list_to_print);
+
 bool client_owns_process(client *input_client, process *input_process);
-client_node* find_client_from_process(process *input_process);
+client_node* find_client_from_process(process_node *input_process);
 process_node* find_process_from_pipe(uv_stream_t *info_pipe);
 client_node* find_client_from_connection(uv_stream_t *client_conn);
-void find_client_and_process_from_process_watcher(uv_process_t *watcher, client **return_client, process_node **return_process_node);
+void find_client_and_process_from_process_watcher(uv_process_t *watcher, client_node **return_client, process_node **return_process, watcher_node **return_watcher);
 
 #endif 

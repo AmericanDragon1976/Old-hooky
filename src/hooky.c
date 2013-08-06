@@ -28,6 +28,7 @@
 
  client_list    *clients;
  uv_loop_t       *loop;
+ watcher_list    *watchers;
 
 void 
 usage()
@@ -203,6 +204,7 @@ main(int argc, char **argv)
 
     clients = new_null_client_list();
     loop = uv_loop_new();
+    watchers = new_null_watcher_list();
 
     clients->base_path = parse_config(argv[1], client_address); 
     init_accept_clients(loop, &(clients->listener), client_address);
