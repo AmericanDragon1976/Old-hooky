@@ -86,6 +86,7 @@ typedef struct process{
     client_node     *head, *tail;
     char            *base_path;
     uv_tcp_t        listener;
+    void            *lock;
 } client_list;
 
 typedef struct watcher_package{
@@ -102,11 +103,13 @@ typedef struct watcher_package{
 
  typedef struct watcher_list{
     watcher_node        *head, *tail;
+    void                *lock;
  }watcher_list;
 
  extern client_list     *clients;
  extern uv_loop_t       *loop;
  extern watcher_list    *watchers;
+ extern int             number;
 
 // functions
 

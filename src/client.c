@@ -113,6 +113,7 @@ new_client_list(client_node *head_node, client_node *tail_node, char *path)
     new_client_list->head = head_node;
     new_client_list->tail = tail_node;
     new_client_list->base_path = path;
+    new_client_list->lock = NULL;
 
     return(new_client_list);
 }
@@ -131,7 +132,7 @@ new_null_client_list()
  */
 client_node* 
 new_client_node(client *input_client, client_node *next_node, client_node *prev_node)
-{//printf("new client node\n");
+{printf("new client node\n");
     client_node     *new_client_node = (client_node *) malloc(sizeof(client_node));
 
     new_client_node->client_data = input_client;
@@ -193,6 +194,7 @@ new_watcher_list(watcher_node *head, watcher_node *tail)
 
     new_list->head = head;
     new_list->tail = tail;
+    new_list->lock = NULL;
 
     return(new_list);
 }
@@ -209,18 +211,29 @@ free_one_watcher_node(watcher_node *old_node)
     if (old_node == NULL)
         return;
 
+    bool       operation_complete = false;
+
     free(old_node->pack_data);
     old_node->pack_data = NULL;
 
-    if (old_node->next != NULL)
-        old_node->next->previous = old_node->previous;
-    else
-        watchers->tail = old_node->previous;
+    while(operation_complete == false){
+        if(watchers->lock == NULL)
+            watchers->lock = (void *) old_node;
 
-    if (old_node->previous != NULL)
-        old_node->previous->next = old_node->next;
-    else
-        watchers->head == old_node->next;
+        if(watchers->lock == old_node){
+            if (old_node->next != NULL)
+                old_node->next->previous = old_node->previous;
+            else
+                watchers->tail = old_node->previous;
+
+            if (old_node->previous != NULL)
+                old_node->previous->next = old_node->next;
+            else
+                watchers->head = old_node->next;
+            operation_complete = true;
+            watchers->lock = NULL;
+        }
+    }
 
     old_node->next = NULL;
     old_node->previous = NULL;
@@ -267,16 +280,15 @@ free_client(client *old_client)
     if (old_client == NULL)
         return(old_client);
 
-//    if (old_client->client_connection != NULL)
-//        uv_close((uv_handle_t *) old_client->client_connection, NULL);
-    free(old_client->client_connection); 
-    old_client->client_connection = NULL;
-
     free(old_client->data); 
     old_client->data = NULL;
 
     old_client->processes = free_process_nodes(old_client->processes); 
     old_client->processes_tail = NULL;
+
+    free(old_client->client_connection); 
+    old_client->client_connection = NULL;   
+
     free(old_client); 
     old_client = NULL;
 
@@ -338,40 +350,36 @@ free_client_nodes(client_node *old_node)
 
 void
 free_one_client_node(client_node *old_node)
-{//printf("free one client node \n");
+{printf("free one client node \n");
     if (old_node == NULL)
         return;
 
-    old_node->client_data = free_client(old_node->client_data);
+    bool        operation_complete = false;
+printf("not null -- ");
+    while(operation_complete == false){
+        if(clients->lock == NULL)
+            clients->lock = old_node;
 
-    watcher_node    *temp_node = watchers->head, *node_ptr = NULL;
-    while(temp_node != NULL){
-        if (temp_node->pack_data != NULL)
-            if(temp_node->pack_data->owner_node == old_node){
-                node_ptr = temp_node;
-                temp_node = temp_node->next;
-                free_one_watcher_node(node_ptr);
-                node_ptr = NULL;
-            } 
-            else {
-                temp_node = temp_node->next;
-            }
-        else
-            temp_node = temp_node->next;
+        if (clients->lock == old_node){
+            if (old_node->next != NULL)
+                old_node->next->previous = old_node->previous;
+            else 
+                clients->tail = old_node->previous;
+printf("next set -- ");
+            if (old_node->previous != NULL)
+                old_node->previous->next = old_node->next;
+            else 
+                clients->head = old_node->next;
+
+            operation_complete = true;
+            clients->lock = NULL;
+        }
     }
-
-    if (old_node->next != NULL)
-        old_node->next->previous = old_node->previous;
-    else 
-        clients->tail = old_node->previous;
-
-    if (old_node->previous != NULL)
-        old_node->previous->next = old_node->next;
-    else 
-        clients->head = old_node->next;
-
+printf("previous set -- ");
+    old_node->client_data = free_client(old_node->client_data);
     free(old_node);
     old_node = NULL;
+printf("leaving free one node \n");
 }
 
 /*
@@ -383,18 +391,16 @@ free_process_nodes(process_node *old_node)
     if (old_node == NULL)
         return(old_node);
 
-    watcher_node    *temp_node = watchers->head, *node_ptr = NULL;
-    while(temp_node != NULL){
-        if (temp_node->pack_data != NULL)
-            if (temp_node->pack_data->containing_process_node == old_node){
-                free_one_watcher_node(temp_node);
-                temp_node = NULL;
-            }
-            else {
-                temp_node = temp_node->next;
-            }
-        else
-            temp_node = temp_node->next;
+    watcher_node        *temp_node = watchers->tail;
+
+    while(temp_node !=NULL){
+        if ((temp_node->pack_data != NULL) && (temp_node->pack_data->containing_process_node == old_node)){
+            free_one_watcher_node(temp_node);
+            temp_node = NULL;
+        }
+        else{ 
+            temp_node = temp_node->previous;
+        }
     }
 
     old_node->process_data = free_process(old_node->process_data);
@@ -413,51 +419,48 @@ void
 free_one_process_node(client_node *owner_node, process_node *old_node)
 {//printf("free one process node\n");
     if (old_node == NULL)
-        return;
+    return;
 
-    watcher_node    *temp_node = watchers->head, *node_ptr = NULL;
-    while(temp_node != NULL){
-        if (temp_node->pack_data != NULL)
-            if (temp_node->pack_data->containing_process_node == old_node){
-                if(temp_node->next != NULL)
-                    temp_node->next->previous = temp_node->previous;
-                else
-                    watchers->tail = temp_node->previous;
-
-                if (temp_node->previous != NULL)
-                    temp_node->previous->next = temp_node->next;
-                else
-                    watchers->head = temp_node->next;
-
-                temp_node->next = NULL;
-                temp_node->previous = NULL;
-                free(temp_node->pack_data);
-                temp_node->pack_data = NULL;
-                free_one_watcher_node(temp_node);
-                temp_node = NULL;
-            }
+    if (owner_node == NULL){
+        printf("ERROR: null client sent to free one process node\n");
+        free_process_nodes(old_node);
     }
 
-    old_node->process_data = free_process(old_node->process_data);
-    client          *temp_client = owner_node->client_data;
+    watcher_node        *temp_node = watchers->tail;
+    bool                operation_complete = false;
 
-    if (temp_client == NULL){
-        fprintf(stderr, "NULL client data sent to free one process node\n");
+    while(operation_complete == false){ 
+        if (watchers->lock == NULL)
+            watchers->lock = old_node;
+
+        if (watchers->lock == old_node){
+            if (old_node->next == NULL)
+                owner_node->client_data->processes_tail = old_node->previous;
+            else 
+                old_node->next->previous = old_node->previous;
+
+            if (old_node->previous == NULL)
+                owner_node->client_data->processes = old_node->next;
+            else 
+                old_node->previous->next = old_node->next;
+
+            operation_complete = true;
+            watchers->lock = NULL;
+        }
     }
-    else {
-        if (old_node->next != NULL)
-            old_node->next->previous = old_node->previous;
-        else 
-            temp_client->processes_tail = old_node->previous;
-
-        if (old_node->previous != NULL)
-            old_node->previous->next = old_node->next;
-        else 
-            temp_client->processes = old_node->next;
-    }
-
     old_node->next = NULL;
     old_node->previous = NULL;
+    old_node->process_data = free_process(old_node->process_data);
+
+    while(temp_node !=NULL){
+        if (temp_node->pack_data != NULL && temp_node->pack_data->containing_process_node == old_node){
+            free_one_watcher_node(temp_node);
+            temp_node = NULL;
+        }
+        else{ 
+            temp_node = temp_node->previous;
+        }
+    }
     free(old_node);
     old_node = NULL;
 }
@@ -630,7 +633,7 @@ find_process_from_pipe(uv_stream_t *info_pipe)
  */
 client_node* 
 find_client_from_connection(uv_stream_t *client_conn)
-{printf("find client from connection\n");
+{//printf("find client from connection\n");
     if (clients == NULL)
         return(NULL);
 
@@ -649,7 +652,7 @@ find_client_from_connection(uv_stream_t *client_conn)
             curr_client = NULL;
         }
     }
-printf("returning %p \n", curr_client);
+//printf("returning %p \n", curr_client);
     return (return_client_node);
 }
 
@@ -662,8 +665,15 @@ printf("returning %p \n", curr_client);
 void 
 find_client_and_process_from_process_watcher(uv_process_t *watcher, client_node **return_client, process_node **return_process, watcher_node **return_watcher)
 {//printf("find client and process from watcher\n");
-    if (clients == NULL)
+    if (clients == NULL){
+        fprintf(stderr, "ERROR: attempting to find client in NULL client list. \n");
+        exit(1);
         return;
+    }
+
+    if (watchers == NULL){
+        fprintf(stderr, "Error: watchers list corrupted. Watchers NULL, attempting to find client from process.\n");
+    }
 
     client_node     *temp_client_node = clients->head;
     process_node    *temp_process_node = NULL;
@@ -671,11 +681,13 @@ find_client_and_process_from_process_watcher(uv_process_t *watcher, client_node 
 
     while(temp_watcher_node != NULL){ 
         if (watcher == temp_watcher_node->pack_data->child_req){
-            *return_client = temp_watcher_node->pack_data->owner_node;
-            *return_process = temp_watcher_node->pack_data->containing_process_node;
-            *return_watcher = temp_watcher_node;
-            return;
+            *return_client = temp_watcher_node->pack_data->owner_node; 
+            *return_process = temp_watcher_node->pack_data->containing_process_node; 
+            *return_watcher = temp_watcher_node; 
+            temp_watcher_node = NULL;
         }
-        temp_watcher_node = temp_watcher_node->previous;
-    }
+        else  {
+            temp_watcher_node = temp_watcher_node->previous;
+        }
+    }//printf("leaving find client etc from watcher %p\n", *return_watcher);
 }

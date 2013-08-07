@@ -1,6 +1,8 @@
 #!/usr/bin/env ruby
 
 require 'socket'
+require 'oj'
+require 'multi_json'
 
 class Connection
 
@@ -22,14 +24,16 @@ class Connection
   end
 
   def receive
-    # puts "receive"
+    #puts "receive"
     len = socket.recv(4).unpack('L')[0] # 32-bit unsigned, native endian (uint32_t)
-    # puts "length: #{len}"
-    data = ''
-    until data.bytes.count == len do
-      data += socket.recv (len - data.bytes.count)
-    end
+    #puts "length: #{len}"
+    data = socket.read(len)
+    #until data.bytes.count == len do
+    #  data += socket.recv (len - data.bytes.count)
+      #puts "size: #{data.length} count: #{data.bytes.count}"
+    #end
     data
+    # socket.recv 0
   end
 
   def socket
@@ -39,11 +43,13 @@ class Connection
   alias :connect :socket
 
   def establish_connection
-    TCPSocket.open @host, @port
+    _socket = TCPSocket.open @host, @port
+    _socket.setsockopt(Socket::IPPROTO_TCP,Socket::TCP_NODELAY, 1)
+    _socket
   end
 end
 
-host = '127.0.0.1'
+host = '0.0.0.0'
 port = '4000'
 
 connection = Connection.new host, port
@@ -56,20 +62,27 @@ end
 
 current_iteration = 0
 
-10.times do
+10000.times do
 
   current_iteration += 1
-  puts current_iteration if current_iteration % 10000 == 0
-
-  message = messages[rand(4)]
-  connection.deliver message
-  result = connection.receive
-
-  if not result == message
-    puts "whoa! iteration #{current_iteration} mismatch..."
-    puts "original length: #{message.length}"
-    puts "received length: #{result.length}"
-    exit
+  
+  if current_iteration % 100 == 0
+    puts current_iteration 
   end
+
+  #message = messages[rand(4)]
+
+  request = {
+    hook: 'sandbox.test',
+    payload: "iteration: #{current_iteration}"
+  }
+
+  connection.deliver MultiJson.dump(request)
+
+  response = connection.receive
+
+  #puts response
+
+  # puts MultiJson.load(response, symbolize_keys: true)
 
 end
