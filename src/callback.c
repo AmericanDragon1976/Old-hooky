@@ -63,11 +63,7 @@ child_exit(uv_process_t *req, int exit_status, int term_signal)
         free(reply_txt);
         reply_txt = NULL; 
         uv_shutdown_t       *out = NULL, *err = NULL;
-        //out = (uv_shutdown_t *) malloc(sizeof *out);
-        //uv_shutdown(out, (uv_stream_t *) &curr_process_node->process_data->out_pipe, NULL);
         uv_close((uv_handle_t *) &curr_process_node->process_data->out_pipe, NULL);
-        //err = (uv_shutdown_t *) malloc(sizeof *err);
-        //uv_shutdown(err, (uv_stream_t *) &curr_process_node->process_data->err_pipe, NULL);
         uv_close((uv_handle_t *) &curr_process_node->process_data->err_pipe, NULL);
         curr_process_node->process_data = free_process(curr_process_node->process_data);
         uv_close((uv_handle_t *) req, NULL);
